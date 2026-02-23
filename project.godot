@@ -1,0 +1,29 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="Global Asset Manager"
+config/description="Godot Engine addon to create a central hub for scanning, tagging, and importing local game assets."
+config/tags=PackedStringArray("addon")
+config/features=PackedStringArray("4.6", "Forward Plus")
+config/icon="uid://v7toxwn166s3"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/global_asset_manager/plugin.cfg")
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+
+[rendering]
+
+rendering_device/driver.windows="d3d12"
