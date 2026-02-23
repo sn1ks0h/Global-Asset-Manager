@@ -3,7 +3,7 @@
 @static_unload
 class_name AssetManager
 extends Control
-## Desktop application for scanning, tagging, and organizing local game assets.
+## Main interface for the Global Asset Manager plugin.
 
 signal asset_selected(path: String)
 signal db_updated
@@ -17,12 +17,10 @@ const DB_FILE_PATH: String = "user://asset_database.json"
 
 var db: Dictionary = {
 	"assets": {},
-	"folders": [],
-	"settings": {
-		"active_formats": ["glb", "gltf", "png", "jpg", "jpeg", "webp", "ogg", "mp3", "wav"],
-		"volume": 25.0
-	}
+	"folders": {},
+	"settings": {}
 }
+
 var all_known_tags: Array[String] = []
 var current_selected_path: String = ""
 
@@ -64,10 +62,7 @@ var tags_root: TreeItem
 @onready var available_tags_flow_container: HFlowContainer = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/AvailableTagsScroll/AvailableTagsFlowContainer
 @onready var audio_player: AudioStreamPlayer = $AudioStreamPlayer
 @onready var folder_dialog: FileDialog = $FolderDialog
-@onready var settings_dialog: AcceptDialog = $SettingsDialog
-@onready var volume_label: Label = $SettingsDialog/VBoxContainer/VolumeLabel
-@onready var volume_slider: HSlider = $SettingsDialog/VBoxContainer/VolumeSlider
-@onready var settings_tree: Tree = $SettingsDialog/VBoxContainer/SettingsTree
+@onready var settings_dialog: SettingsManager = $SettingsDialog
 @onready var tag_context_menu: PopupMenu = $TagContextMenu
 
 func _ready() -> void:
@@ -92,12 +87,15 @@ func _ready() -> void:
 	open_location_button.pressed.connect(_on_open_location_pressed)
 	send_to_project_button.pressed.connect(_on_send_to_project_pressed)
 	preview_3d_viewport.get_parent().gui_input.connect(_on_preview_gui_input)
-	settings_tree.item_edited.connect(_on_settings_tree_item_edited)
-	volume_slider.value_changed.connect(_on_volume_changed)
 	tag_context_menu.id_pressed.connect(_on_tag_context_menu_id_pressed)
 	audio_player.finished.connect(_on_audio_finished)
 
+	settings_dialog.settings_changed.connect(_on_settings_changed)
+	settings_dialog.database_cleared.connect(_on_database_cleared)
+
 	_load_database()
+	settings_dialog.setup(db)
+	_update_audio_volume()
 	_rebuild_nav_tree()
 
 func scan_directory(path: String) -> void:
@@ -273,7 +271,7 @@ func _recursive_scan(dir: DirAccess, current_path: String, root_path: String) ->
 
 func _determine_asset_type(extension: String) -> AssetType:
 	var ext: String = extension.to_lower()
-	var active_formats: Array = db["settings"]["active_formats"]
+	var active_formats: Array = db["settings"].get("active_formats", [])
 
 	if not active_formats.has(ext):
 		return AssetType.UNKNOWN
@@ -303,24 +301,7 @@ func _load_database() -> void:
 		if parsed and parsed is Dictionary:
 			if parsed.has("assets"): db["assets"] = parsed["assets"]
 			if parsed.has("folders"): db["folders"] = parsed["folders"]
-			if parsed.has("settings"):
-				db["settings"] = parsed["settings"]
-
-	if not db["settings"].has("active_formats"):
-		db["settings"]["active_formats"] = ["glb", "gltf", "fbx", "png", "jpg", "jpeg", "webp", "ogg", "mp3", "wav"]
-
-	if db["settings"].has("target_project"):
-		db["settings"].erase("target_project")
-	if db["settings"].has("recent_projects"):
-		db["settings"].erase("recent_projects")
-
-	if not db["settings"].has("volume"):
-		db["settings"]["volume"] = 50.0
-
-	volume_slider.value = db["settings"]["volume"]
-	volume_label.text = "Max Audio Volume: " + str(int(volume_slider.value)) + "%"
-	_update_audio_volume(volume_slider.value)
-	_save_database()
+			if parsed.has("settings"): db["settings"] = parsed["settings"]
 
 func _save_database() -> void:
 	var file := FileAccess.open(DB_FILE_PATH, FileAccess.WRITE)
@@ -421,45 +402,8 @@ func _update_tags_tree() -> void:
 
 		count += 1
 
-func _populate_settings_tree() -> void:
-	settings_tree.clear()
-	var root := settings_tree.create_item()
-
-	_add_setting_category(root, "3D Models", ALL_3D_FORMATS)
-	_add_setting_category(root, "2D Images", ALL_2D_FORMATS)
-	_add_setting_category(root, "Audio", ALL_AUDIO_FORMATS)
-
-func _add_setting_category(parent: TreeItem, label: String, formats: PackedStringArray) -> void:
-	var category_item := settings_tree.create_item(parent)
-	category_item.set_cell_mode(0, TreeItem.CELL_MODE_CHECK)
-	category_item.set_text(0, label)
-	category_item.set_editable(0, true)
-	category_item.set_metadata(0, "category")
-
-	var all_checked := true
-	for ext in formats:
-		var child := settings_tree.create_item(category_item)
-		child.set_cell_mode(0, TreeItem.CELL_MODE_CHECK)
-		child.set_text(0, "." + ext)
-		child.set_editable(0, true)
-
-		var is_active: bool = db["settings"]["active_formats"].has(ext)
-		child.set_checked(0, is_active)
-		child.set_metadata(0, ext)
-
-		if not is_active:
-			all_checked = false
-
-	category_item.set_checked(0, all_checked)
-
-func _update_active_format(ext: String, is_active: bool) -> void:
-	var active_list: Array = db["settings"]["active_formats"]
-	if is_active and not active_list.has(ext):
-		active_list.append(ext)
-	elif not is_active and active_list.has(ext):
-		active_list.erase(ext)
-
-func _update_audio_volume(val: float) -> void:
+func _update_audio_volume() -> void:
+	var val: float = db["settings"].get("volume", 50.0)
 	if val <= 0:
 		audio_player.volume_db = -80.0
 	else:
@@ -837,7 +781,6 @@ func _update_tag_ui() -> void:
 		available_tags_flow_container.add_child(btn)
 
 func _export_selected_to_project() -> void:
-	var target_proj := "res://"
 	var selected_items := asset_grid.get_selected_items()
 	var export_count := 0
 
@@ -845,15 +788,14 @@ func _export_selected_to_project() -> void:
 		var path: String = asset_grid.get_item_metadata(idx)
 		if db["assets"].has(path):
 			var asset_type: int = db["assets"][path].get("type", AssetType.UNKNOWN)
-			var folder_name := "misc"
+			var dest_dir := "res://assets/misc"
 
 			match asset_type:
-				AssetType.MODEL_3D: folder_name = "models"
-				AssetType.IMAGE_2D: folder_name = "images"
-				AssetType.AUDIO: folder_name = "audio"
-				AssetType.SHADER: folder_name = "shaders"
+				AssetType.MODEL_3D: dest_dir = db["settings"].get("import_path_3d", "res://assets/models")
+				AssetType.IMAGE_2D: dest_dir = db["settings"].get("import_path_2d", "res://assets/images")
+				AssetType.AUDIO: dest_dir = db["settings"].get("import_path_audio", "res://assets/audio")
+				AssetType.SHADER: dest_dir = db["settings"].get("import_path_shader", "res://assets/shaders")
 
-			var dest_dir := target_proj + "assets/" + folder_name
 			if not DirAccess.dir_exists_absolute(dest_dir):
 				DirAccess.make_dir_recursive_absolute(dest_dir)
 
@@ -875,7 +817,6 @@ func _on_scan_button_pressed() -> void:
 	folder_dialog.popup_centered()
 
 func _on_settings_button_pressed() -> void:
-	_populate_settings_tree()
 	settings_dialog.popup_centered()
 
 func _on_folder_selected(path: String) -> void:
@@ -1015,32 +956,21 @@ func _on_preview_gui_input(event: InputEvent) -> void:
 		preview_3d_pivot.rotation.x += -delta.y * 0.01
 		preview_3d_pivot.rotation.x = clampf(preview_3d_pivot.rotation.x, -PI / 2.5, PI / 2.5)
 
-func _on_settings_tree_item_edited() -> void:
-	var item := settings_tree.get_edited()
-	var is_checked := item.is_checked(0)
-	var meta: Variant = item.get_metadata(0)
+func _on_settings_changed() -> void:
+	_update_audio_volume()
+	_populate_asset_grid()
 
-	if meta is String and meta == "category":
-		for i in range(item.get_child_count()):
-			var child := item.get_child(i)
-			child.set_checked(0, is_checked)
-			var ext: String = child.get_metadata(0)
-			_update_active_format(ext, is_checked)
-	elif meta is String:
-		_update_active_format(meta, is_checked)
-
-		var parent := item.get_parent()
-		if parent:
-			var all_checked := true
-			for i in range(parent.get_child_count()):
-				if not parent.get_child(i).is_checked(0):
-					all_checked = false
-			parent.set_checked(0, all_checked)
-
+func _on_database_cleared() -> void:
+	db["assets"].clear()
+	db["folders"].clear()
 	_save_database()
 
-func _on_volume_changed(value: float) -> void:
-	db["settings"]["volume"] = value
-	volume_label.text = "Max Audio Volume: " + str(int(value)) + "%"
-	_update_audio_volume(value)
-	_save_database()
+	all_known_tags.clear()
+	_active_filter_tags.clear()
+	_current_filter_folder = ""
+	_search_query = ""
+	search_input.clear()
+
+	_rebuild_nav_tree()
+	_populate_asset_grid()
+	_handle_selection_change()
