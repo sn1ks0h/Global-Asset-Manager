@@ -54,15 +54,24 @@ layout_mode = 2
 split_offsets = PackedInt32Array(400)
 split_offset = 400
 
-[node name="CenterPanel" type="VBoxContainer" parent="MarginContainer/MainSplit/ContentSplit" unique_id=843297428]
+[node name="CenterPanel" type="VBoxContainer" parent="MarginContainer/MainSplit/ContentSplit" unique_id=769933576]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="SearchInput" type="LineEdit" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=1710140984]
+[node name="SearchHBox" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=1945662127]
 layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SearchInput" type="LineEdit" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=419141879]
+layout_mode = 2
+size_flags_horizontal = 3
 placeholder_text = "Fuzzy search assets..."
 
-[node name="AssetGrid" type="ItemList" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=153566604]
+[node name="ViewModeButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=756371405]
+layout_mode = 2
+text = "View: Grid"
+
+[node name="AssetGrid" type="ItemList" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=1739278632]
 texture_filter = 1
 layout_mode = 2
 size_flags_vertical = 3
