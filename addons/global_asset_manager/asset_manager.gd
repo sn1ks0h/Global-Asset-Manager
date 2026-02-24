@@ -38,7 +38,7 @@ var _tag_display_limit: int = 20
 var _is_grid_view: bool = false
 var _grid_icon_size: int = 40
 var _blank_placeholder_tex: ImageTexture
-
+var _light_mode_idx: int = 0 # 0 = Lit, 1 = Unlit, 2 = Wireframe
 var _preview_controller: PreviewController = PreviewController.new()
 
 var folders_root: TreeItem
@@ -71,11 +71,32 @@ var tags_root: TreeItem
 @onready var folder_dialog: FileDialog = $FolderDialog
 @onready var settings_dialog: SettingsManager = $SettingsDialog
 @onready var tag_context_menu: PopupMenu = $TagContextMenu
+@onready var preview_3d_toolbar: MarginContainer = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar
+@onready var reset_origin_btn: Button = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar/HBox/ResetOriginBtn
+@onready var reset_zoom_btn: Button = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar/HBox/ResetZoomBtn
+@onready var light_mode_btn: Button = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar/HBox/LightModeBtn
 
 func _ready() -> void:
 	# GUARD: Don't populate the massive DB if we are just editing the scene in the 2D workspace
 	if Engine.is_editor_hint() and get_parent() == get_tree().root:
 		return
+
+	# Inject a clean, bloom-free environment for pure 3D rendering
+	var clean_env := Environment.new()
+	clean_env.background_mode = Environment.BG_COLOR
+	clean_env.background_color = Color(0.18, 0.18, 0.18) # Dark neutral grey
+	clean_env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	clean_env.ambient_light_color = Color(1.0, 1.0, 1.0)
+	clean_env.ambient_light_energy = 0.4
+	clean_env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	clean_env.glow_enabled = false
+	var world_env := WorldEnvironment.new()
+	world_env.environment = clean_env
+	preview_3d_viewport.add_child(world_env)
+
+	reset_origin_btn.pressed.connect(func() -> void: _preview_controller.reset_origin())
+	reset_zoom_btn.pressed.connect(func() -> void: _preview_controller.reset_zoom())
+	light_mode_btn.pressed.connect(_on_light_mode_pressed)
 
 	preview_2d_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	asset_grid.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -575,6 +596,7 @@ func _handle_selection_change() -> void:
 
 func _display_preview() -> void:
 	preview_3d_viewport.get_parent().visible = _current_asset_type == AssetType.MODEL_3D
+	preview_3d_toolbar.visible = _current_asset_type == AssetType.MODEL_3D
 	preview_2d_rect.visible = _current_asset_type == AssetType.IMAGE_2D
 	replay_button.visible = _current_asset_type == AssetType.AUDIO
 
@@ -1112,6 +1134,19 @@ func _on_view_mode_toggled() -> void:
 	view_mode_button.text = "View: Grid" if _is_grid_view else "View: List"
 	_apply_view_mode_settings()
 	_populate_asset_grid()
+
+func _on_light_mode_pressed() -> void:
+	_light_mode_idx = (_light_mode_idx + 1) % 3
+	match _light_mode_idx:
+		0:
+			light_mode_btn.text = "Lit"
+			preview_3d_viewport.debug_draw = Viewport.DEBUG_DRAW_DISABLED
+		1:
+			light_mode_btn.text = "Unlit"
+			preview_3d_viewport.debug_draw = Viewport.DEBUG_DRAW_UNSHADED
+		2:
+			light_mode_btn.text = "Wireframe"
+			preview_3d_viewport.debug_draw = Viewport.DEBUG_DRAW_WIREFRAME
 
 func _on_zoom_out_pressed() -> void:
 	_grid_icon_size = maxi(16, _grid_icon_size - 8)

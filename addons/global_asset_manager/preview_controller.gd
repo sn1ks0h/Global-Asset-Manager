@@ -31,6 +31,18 @@ func reset_views() -> void:
 		texture_rect.scale = Vector2.ONE
 		texture_rect.position = Vector2.ZERO
 
+func reset_origin() -> void:
+	_yaw = 0.0
+	_pitch = 0.0
+	if is_instance_valid(pivot):
+		pivot.transform.basis = Basis.IDENTITY
+		pivot.position = Vector3.ZERO
+
+func reset_zoom() -> void:
+	if is_instance_valid(camera) and _initial_cam_transform != Transform3D():
+		# Preserve the camera's angle, but snap its distance back to default
+		camera.global_position = _initial_cam_transform.origin
+
 func handle_3d_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
