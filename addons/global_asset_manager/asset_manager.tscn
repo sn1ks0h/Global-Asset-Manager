@@ -3,6 +3,16 @@
 [ext_resource type="Script" uid="uid://bhxhjvggmpfr6" path="res://addons/global_asset_manager/asset_manager.gd" id="1_abcde"]
 [ext_resource type="Script" uid="uid://bqil1tlkmnbxj" path="res://addons/global_asset_manager/settings_manager.gd" id="2_fghij"]
 
+[sub_resource type="Environment" id="Environment_f1y5n"]
+background_mode = 1
+background_color = Color(0.18, 0.18, 0.18, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.4
+
+[sub_resource type="World3D" id="World3D_ul3vj"]
+environment = SubResource("Environment_f1y5n")
+
 [node name="AssetManager" type="Control" unique_id=1572556146]
 layout_mode = 3
 anchors_preset = 15
@@ -124,6 +134,7 @@ mouse_filter = 2
 stretch = true
 
 [node name="SubViewport" type="SubViewport" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer" unique_id=140946012]
+world_3d = SubResource("World3D_ul3vj")
 handle_input_locally = false
 size = Vector2i(446, 241)
 render_target_update_mode = 4

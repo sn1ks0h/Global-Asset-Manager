@@ -1140,7 +1140,7 @@ func _on_light_mode_pressed() -> void:
 			light_mode_btn.text = "Lit"
 			preview_3d_viewport.debug_draw = Viewport.DEBUG_DRAW_DISABLED
 		1:
-			light_mode_btn.text = "Unlit"
+			light_mode_btn.text = "Unshaded"
 			preview_3d_viewport.debug_draw = Viewport.DEBUG_DRAW_UNSHADED
 		2:
 			light_mode_btn.text = "Wireframe"
