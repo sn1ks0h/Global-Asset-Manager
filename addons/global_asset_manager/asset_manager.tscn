@@ -58,24 +58,37 @@ split_offset = 400
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="SearchHBox" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=1945662127]
+[node name="SearchHBox" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=1595355325]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="SearchInput" type="LineEdit" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=419141879]
+[node name="SearchInput" type="LineEdit" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=1650205098]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Fuzzy search assets..."
 
-[node name="ViewModeButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=756371405]
+[node name="ZoomOutButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=839575094]
+visible = false
 layout_mode = 2
-text = "View: Grid"
+text = " - "
+
+[node name="ZoomInButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=1622756085]
+visible = false
+layout_mode = 2
+text = " + "
+
+[node name="ViewModeButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=1186203920]
+layout_mode = 2
+text = "View: List"
 
 [node name="AssetGrid" type="ItemList" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=1739278632]
 texture_filter = 1
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 4
 select_mode = 1
+fixed_icon_size = Vector2i(24, 24)
 
 [node name="PaginationContainer" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=751157778]
 layout_mode = 2

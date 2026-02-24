@@ -36,6 +36,7 @@ var _items_per_page: int = 100
 var _search_query: String = ""
 var _tag_display_limit: int = 20
 var _is_grid_view: bool = false
+var _grid_icon_size: int = 40
 var _blank_placeholder_tex: ImageTexture
 
 var _preview_controller: PreviewController = PreviewController.new()
@@ -48,6 +49,8 @@ var tags_root: TreeItem
 @onready var nav_tree: Tree = $MarginContainer/MainSplit/Sidebar/NavigationTree
 @onready var search_input: LineEdit = $MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox/SearchInput
 @onready var view_mode_button: Button = $MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox/ViewModeButton
+@onready var zoom_out_button: Button = $MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox/ZoomOutButton
+@onready var zoom_in_button: Button = $MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox/ZoomInButton
 @onready var asset_grid: ItemList = $MarginContainer/MainSplit/ContentSplit/CenterPanel/AssetGrid
 @onready var prev_page_button: Button = $MarginContainer/MainSplit/ContentSplit/CenterPanel/PaginationContainer/PrevPageButton
 @onready var next_page_button: Button = $MarginContainer/MainSplit/ContentSplit/CenterPanel/PaginationContainer/NextPageButton
@@ -112,6 +115,9 @@ func _ready() -> void:
 
 	settings_dialog.settings_changed.connect(_on_settings_changed)
 	settings_dialog.database_cleared.connect(_on_database_cleared)
+
+	zoom_out_button.pressed.connect(_on_zoom_out_pressed)
+	zoom_in_button.pressed.connect(_on_zoom_in_pressed)
 
 	# We use a 1x1 image so Godot can stretch it to whatever the fixed_icon_size is
 	var blank_img := Image.create_empty(1, 1, false, Image.FORMAT_RGBA8)
@@ -330,6 +336,12 @@ func _load_database() -> void:
 			if parsed.has("folders"): db["folders"] = parsed["folders"]
 			if parsed.has("settings"): db["settings"] = parsed["settings"]
 
+	# Initialize our zoom preference or set the default
+	if not db["settings"].has("grid_icon_size"):
+		db["settings"]["grid_icon_size"] = 40
+
+	_grid_icon_size = db["settings"]["grid_icon_size"]
+
 func _save_database() -> void:
 	var file := FileAccess.open(DB_FILE_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(db, "\t"))
@@ -518,15 +530,9 @@ func _populate_asset_grid() -> void:
 		var item_text := filename
 		var item_icon = thumb
 
-		if _is_grid_view:
-			if thumb != null:
-				item_text = "" # Hide text to just show the large thumbnail
-			else:
-				item_text = _format_grid_text(filename) # Wrap text into a square block
-				item_icon = null # Pass null so text occupies the image space
-		else:
-			if thumb == null:
-				item_icon = _blank_placeholder_tex # Forces proper 24px indentation in list mode
+		# If there is no image preview, fetch the beautiful Godot Editor Icon
+		if item_icon == null:
+			item_icon = _get_placeholder_icon(asset_type)
 
 		var idx := asset_grid.add_item(item_text, item_icon)
 		asset_grid.set_item_metadata(idx, path)
@@ -912,45 +918,44 @@ func _export_selected_to_project() -> void:
 		get_tree().create_timer(2.0).timeout.connect(func() -> void: send_to_project_button.text = original_text)
 
 func _apply_view_mode_settings() -> void:
+	zoom_out_button.visible = _is_grid_view
+	zoom_in_button.visible = _is_grid_view
+
 	if _is_grid_view:
-		asset_grid.max_columns = 0 # 0 auto-wraps columns dynamically
+		asset_grid.max_columns = 0
 		asset_grid.same_column_width = true
-		asset_grid.fixed_column_width = 96
+		asset_grid.fixed_column_width = _grid_icon_size + 16 # 56px when icon is 40px
 		asset_grid.icon_mode = ItemList.ICON_MODE_TOP
-		asset_grid.fixed_icon_size = Vector2i(80, 80)
+		asset_grid.fixed_icon_size = Vector2i(_grid_icon_size, _grid_icon_size)
+		asset_grid.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		asset_grid.add_theme_constant_override("h_separation", 12)
 		asset_grid.add_theme_constant_override("v_separation", 12)
 	else:
-		asset_grid.max_columns = 1 # Forces a single vertical list
+		asset_grid.max_columns = 1
 		asset_grid.same_column_width = false
 		asset_grid.fixed_column_width = 0
 		asset_grid.icon_mode = ItemList.ICON_MODE_LEFT
-		asset_grid.fixed_icon_size = Vector2i(24, 24) # Shrinks previews down to the size of text
+		asset_grid.fixed_icon_size = Vector2i(24, 24)
+		asset_grid.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		asset_grid.add_theme_constant_override("h_separation", 8)
 		asset_grid.add_theme_constant_override("v_separation", 4)
 
-func _format_grid_text(text: String) -> String:
-	var max_lines := 5
-	var chars_per_line := 12
-	var lines := PackedStringArray()
+func _get_placeholder_icon(asset_type: int) -> Texture2D:
+	# Ensure we are running as a tool in the editor to access the EditorTheme
+	if not Engine.is_editor_hint():
+		return _blank_placeholder_tex
 
-	var current_pos := 0
-	while current_pos < text.length():
-		lines.append(text.substr(current_pos, chars_per_line))
-		current_pos += chars_per_line
+	var icon_name := "File"
+	match asset_type:
+		AssetType.MODEL_3D: icon_name = "MeshInstance3D"
+		AssetType.AUDIO: icon_name = "AudioStreamPlayer"
+		AssetType.SHADER: icon_name = "Shader"
 
-	if lines.size() > max_lines:
-		lines = lines.slice(0, max_lines)
-		var last := lines[max_lines - 1]
-		if last.length() > chars_per_line - 3:
-			last = last.substr(0, chars_per_line - 3)
-		lines[max_lines - 1] = last + "..."
+	var theme := EditorInterface.get_editor_theme()
+	if theme and theme.has_icon(icon_name, "EditorIcons"):
+		return theme.get_icon(icon_name, "EditorIcons")
 
-	# Pad with empty lines so the height matches the 80x80 image squares
-	while lines.size() < max_lines:
-		lines.append("")
-
-	return "\n".join(lines)
+	return _blank_placeholder_tex
 
 func _on_scan_button_pressed() -> void:
 	folder_dialog.popup_centered()
@@ -1104,6 +1109,18 @@ func _on_database_cleared() -> void:
 
 func _on_view_mode_toggled() -> void:
 	_is_grid_view = not _is_grid_view
-	view_mode_button.text = "View: List" if _is_grid_view else "View: Grid"
+	view_mode_button.text = "View: Grid" if _is_grid_view else "View: List"
 	_apply_view_mode_settings()
 	_populate_asset_grid()
+
+func _on_zoom_out_pressed() -> void:
+	_grid_icon_size = maxi(16, _grid_icon_size - 8)
+	db["settings"]["grid_icon_size"] = _grid_icon_size
+	_save_database()
+	_apply_view_mode_settings()
+
+func _on_zoom_in_pressed() -> void:
+	_grid_icon_size = mini(256, _grid_icon_size + 8)
+	db["settings"]["grid_icon_size"] = _grid_icon_size
+	_save_database()
+	_apply_view_mode_settings()
