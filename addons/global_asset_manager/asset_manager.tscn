@@ -1,140 +1,144 @@
-[gd_scene format=3 uid="uid://ds014qe4yvdah"]
+[gd_scene format=3 uid="uid://dspvtw055wu4s"]
 
-[ext_resource type="Script" uid="uid://bhxhjvggmpfr6" path="res://addons/global_asset_manager/asset_manager.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bhxhjvggmpfr6" path="res://addons/global_asset_manager/asset_manager.gd" id="1_abcde"]
+[ext_resource type="Script" uid="uid://bqil1tlkmnbxj" path="res://addons/global_asset_manager/settings_manager.gd" id="2_fghij"]
 
-[sub_resource type="Environment" id="Environment_ie6cg"]
-background_mode = 1
-background_color = Color(0.18, 0.18, 0.18, 1)
-ambient_light_source = 2
-ambient_light_color = Color(1, 1, 1, 1)
-ambient_light_energy = 0.4
-
-[sub_resource type="World3D" id="World3D_f1y5n"]
-environment = SubResource("Environment_ie6cg")
-
-[node name="AssetManager" type="Control" unique_id=1543081126]
+[node name="AssetManager" type="Control" unique_id=1572556146]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_script")
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_abcde")
 
-[node name="MarginContainer" type="MarginContainer" parent="." unique_id=726972817]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1495794556]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 8
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
 
-[node name="MainSplit" type="HSplitContainer" parent="MarginContainer" unique_id=2046401417]
+[node name="MainSplit" type="HSplitContainer" parent="MarginContainer" unique_id=838962311]
 layout_mode = 2
 split_offsets = PackedInt32Array(250)
 split_offset = 250
 
-[node name="Sidebar" type="VBoxContainer" parent="MarginContainer/MainSplit" unique_id=1245076096]
+[node name="Sidebar" type="VBoxContainer" parent="MarginContainer/MainSplit" unique_id=2026459748]
 layout_mode = 2
+theme_override_constants/separation = 12
 
-[node name="TopControls" type="HBoxContainer" parent="MarginContainer/MainSplit/Sidebar" unique_id=1697924061]
+[node name="ScanButton" type="Button" parent="MarginContainer/MainSplit/Sidebar" unique_id=1200203880]
 layout_mode = 2
+text = "Scan Folder..."
 
-[node name="ScanButton" type="Button" parent="MarginContainer/MainSplit/Sidebar/TopControls" unique_id=1050919195]
-layout_mode = 2
-text = "Scan Directory"
-
-[node name="SettingsButton" type="Button" parent="MarginContainer/MainSplit/Sidebar/TopControls" unique_id=1797679643]
+[node name="SettingsButton" type="Button" parent="MarginContainer/MainSplit/Sidebar" unique_id=1029532372]
 layout_mode = 2
 text = "Settings"
 
-[node name="NavTree" type="Tree" parent="MarginContainer/MainSplit/Sidebar" unique_id=1127402154]
+[node name="NavigationTree" type="Tree" parent="MarginContainer/MainSplit/Sidebar" unique_id=1210938222]
 layout_mode = 2
 size_flags_vertical = 3
+allow_rmb_select = true
+hide_root = true
 
-[node name="ContentSplit" type="HSplitContainer" parent="MarginContainer/MainSplit" unique_id=994926393]
+[node name="ContentSplit" type="HSplitContainer" parent="MarginContainer/MainSplit" unique_id=1996806136]
 layout_mode = 2
-split_offsets = PackedInt32Array(500)
-split_offset = 500
+split_offsets = PackedInt32Array(400)
+split_offset = 400
 
-[node name="CenterPanel" type="VBoxContainer" parent="MarginContainer/MainSplit/ContentSplit" unique_id=1894072687]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 8
-
-[node name="SearchHBox" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=1283454331]
+[node name="CenterPanel" type="VBoxContainer" parent="MarginContainer/MainSplit/ContentSplit" unique_id=769933576]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="SearchInput" type="LineEdit" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=382795157]
+[node name="SearchHBox" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=1595355325]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SearchInput" type="LineEdit" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=1650205098]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Fuzzy search assets..."
 
-[node name="ZoomOutButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=1793597042]
+[node name="ZoomOutButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=839575094]
+visible = false
 layout_mode = 2
 text = " - "
 
-[node name="ZoomInButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=52026787]
+[node name="ZoomInButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=1622756085]
+visible = false
 layout_mode = 2
 text = " + "
 
-[node name="ViewModeButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=1679126378]
+[node name="ViewModeButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox" unique_id=1186203920]
 layout_mode = 2
 text = "View: List"
 
-[node name="AssetGrid" type="ItemList" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=1160903255]
+[node name="AssetGrid" type="ItemList" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=1739278632]
 texture_filter = 1
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 4
+select_mode = 1
+fixed_icon_size = Vector2i(24, 24)
 
-[node name="PaginationHBox" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=708492726]
+[node name="PaginationContainer" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=751157778]
 layout_mode = 2
 alignment = 1
 
-[node name="PrevPageButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/PaginationHBox" unique_id=1256249449]
+[node name="PrevPageButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/PaginationContainer" unique_id=546984628]
 layout_mode = 2
+disabled = true
 text = "< Prev"
 
-[node name="NextPageButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/PaginationHBox" unique_id=459891401]
+[node name="PageLabel" type="Label" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/PaginationContainer" unique_id=1158757073]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Page 1 of 608"
+horizontal_alignment = 1
+
+[node name="NextPageButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/PaginationContainer" unique_id=1287330111]
 layout_mode = 2
 text = "Next >"
 
-[node name="PreviewPanel" type="VBoxContainer" parent="MarginContainer/MainSplit/ContentSplit" unique_id=1278270937]
+[node name="PreviewPanel" type="VBoxContainer" parent="MarginContainer/MainSplit/ContentSplit" unique_id=1928029523]
 layout_mode = 2
-size_flags_horizontal = 3
+theme_override_constants/separation = 12
 
-[node name="PreviewContainer" type="PanelContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel" unique_id=983591684]
+[node name="PreviewContainer" type="PanelContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel" unique_id=1573284764]
 clip_contents = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="SubViewportContainer" type="SubViewportContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer" unique_id=1560057865]
+[node name="SubViewportContainer" type="SubViewportContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer" unique_id=1729812474]
 layout_mode = 2
 mouse_filter = 2
 stretch = true
 
-[node name="SubViewport" type="SubViewport" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer" unique_id=722164922]
-world_3d = SubResource("World3D_f1y5n")
+[node name="SubViewport" type="SubViewport" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer" unique_id=140946012]
 handle_input_locally = false
-size = Vector2i(487, 359)
+size = Vector2i(446, 241)
 render_target_update_mode = 4
 
-[node name="Camera3D" type="Camera3D" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport" unique_id=388428542]
+[node name="Camera3D" type="Camera3D" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport" unique_id=1167006985]
 transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 2, 2, 3)
 current = true
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport" unique_id=1525816109]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport" unique_id=813099430]
 transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 5, 0)
 light_energy = 0.5
 
-[node name="ModelPivot" type="Node3D" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport" unique_id=1116955084]
+[node name="ModelPivot" type="Node3D" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport" unique_id=182794437]
 
-[node name="TextureRect" type="TextureRect" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer" unique_id=483592517]
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer" unique_id=1268634186]
 visible = false
 texture_filter = 1
 layout_mode = 2
@@ -142,7 +146,7 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="ViewportToolbar" type="MarginContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer" unique_id=1903181310]
+[node name="ViewportToolbar" type="MarginContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer" unique_id=1133259305]
 visible = false
 layout_mode = 2
 size_flags_vertical = 0
@@ -151,82 +155,259 @@ theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 
-[node name="HBox" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar" unique_id=894042676]
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar" unique_id=2323868]
 layout_mode = 2
 alignment = 2
 
-[node name="ResetOriginBtn" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar/HBox" unique_id=1525637637]
+[node name="ResetOriginBtn" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar/HBox" unique_id=1867599949]
 layout_mode = 2
 text = "Origin"
 
-[node name="ResetZoomBtn" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar/HBox" unique_id=390783937]
+[node name="ResetZoomBtn" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar/HBox" unique_id=1872291065]
 layout_mode = 2
 text = "100%"
 
-[node name="LightModeBtn" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar/HBox" unique_id=71158449]
+[node name="LightModeBtn" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar/HBox" unique_id=1690862519]
 custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
 text = "Lit"
 
-[node name="DetailsPanel" type="VBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel" unique_id=912754277]
+[node name="DetailsPanel" type="VBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel" unique_id=1870626175]
 layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.6
+theme_override_constants/separation = 8
 
-[node name="ActionHBox" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=2028916791]
+[node name="FileNameLabel" type="Label" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=1945897261]
 layout_mode = 2
+text = "No asset selected"
+horizontal_alignment = 1
 
-[node name="ReplayButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/ActionHBox" unique_id=2029208746]
+[node name="ActionButtons" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=203888111]
 layout_mode = 2
-text = "Replay Audio"
+alignment = 1
 
-[node name="OpenExternalButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/ActionHBox" unique_id=315575320]
+[node name="ReplayButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/ActionButtons" unique_id=705458203]
+visible = false
 layout_mode = 2
+text = "Replay"
+
+[node name="OpenExternalButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/ActionButtons" unique_id=2085029535]
+layout_mode = 2
+disabled = true
 text = "Open External"
 
-[node name="OpenLocationButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/ActionHBox" unique_id=1991840206]
+[node name="OpenLocationButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/ActionButtons" unique_id=1933600867]
 layout_mode = 2
+disabled = true
 text = "Open Location"
 
-[node name="SendToProjectButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/ActionHBox" unique_id=397438020]
+[node name="SendToProjectButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/ActionButtons" unique_id=1506299809]
 layout_mode = 2
-text = "Send to Project"
+disabled = true
+text = "Add to Project"
 
-[node name="CurrentTagsScroll" type="ScrollContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=952029490]
+[node name="HSeparator1" type="HSeparator" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=1957271692]
+layout_mode = 2
+
+[node name="CurrentTagsLabel" type="Label" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=1625403212]
+layout_mode = 2
+text = "Current Tags (Click to remove):"
+
+[node name="CurrentTagsScroll" type="ScrollContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=325549676]
 custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="TagFlowContainer" type="HFlowContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/CurrentTagsScroll" unique_id=1367932785]
+[node name="TagFlowContainer" type="HFlowContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/CurrentTagsScroll" unique_id=1644314182]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="TagInputField" type="LineEdit" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=2143435237]
+[node name="TagInputField" type="LineEdit" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=189668564]
 layout_mode = 2
 placeholder_text = "Type new tag and press Enter..."
 
-[node name="HSeparator2" type="HSeparator" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=1317004600]
+[node name="HSeparator2" type="HSeparator" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=2046671363]
 layout_mode = 2
 
-[node name="AvailableTagsLabel" type="Label" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=928458435]
+[node name="AvailableTagsLabel" type="Label" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=796453656]
 layout_mode = 2
 text = "Quick Add Known Tags:"
 
-[node name="AvailableTagsScroll" type="ScrollContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=1917177942]
+[node name="AvailableTagsScroll" type="ScrollContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=82847435]
 custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="TagContextMenu" type="PopupMenu" parent="." unique_id=1314553423]
+[node name="AvailableTagsFlowContainer" type="HFlowContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/AvailableTagsScroll" unique_id=1147206232]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="FolderDialog" type="FileDialog" parent="." unique_id=710888012]
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=447829074]
+volume_db = -12.0412
+
+[node name="FolderDialog" type="FileDialog" parent="." unique_id=751017296]
 title = "Open a Directory"
+size = Vector2i(800, 600)
 ok_button_text = "Select Current Folder"
 file_mode = 2
 access = 2
 
-[node name="AudioPlayer" type="AudioStreamPlayer" parent="." unique_id=1275728484]
-
-[node name="SettingsDialog" type="AcceptDialog" parent="." unique_id=118963300]
+[node name="SettingsDialog" type="AcceptDialog" parent="." unique_id=1835870348]
 title = "Settings"
+size = Vector2i(550, 650)
+script = ExtResource("2_fghij")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="SettingsDialog" unique_id=1304404260]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 542.0
+offset_bottom = 601.0
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="SettingsDialog/ScrollContainer" unique_id=1102077803]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="VolumeLabel" type="Label" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=597664857]
+layout_mode = 2
+text = "Max Audio Volume: 25%"
+
+[node name="VolumeSlider" type="HSlider" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=337623076]
+layout_mode = 2
+value = 25.0
+
+[node name="HSeparator1" type="HSeparator" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=898958503]
+layout_mode = 2
+
+[node name="PathsLabel" type="Label" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=79087959]
+layout_mode = 2
+text = "Default Project Import Paths"
+
+[node name="PathsVBox" type="VBoxContainer" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=212524826]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Path3DBox" type="HBoxContainer" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox" unique_id=533637137]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/Path3DBox" unique_id=482903522]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+text = "3D Models:"
+
+[node name="Path3DEdit" type="LineEdit" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/Path3DBox" unique_id=1729944401]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "res://assets/models"
+placeholder_text = "res://assets/models"
+
+[node name="Path3DBtn" type="Button" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/Path3DBox" unique_id=1270886819]
+layout_mode = 2
+text = "Browse"
+
+[node name="Path2DBox" type="HBoxContainer" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox" unique_id=1285561563]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/Path2DBox" unique_id=79932626]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+text = "2D Images:"
+
+[node name="Path2DEdit" type="LineEdit" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/Path2DBox" unique_id=771401102]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "res://assets/images"
+placeholder_text = "res://assets/images"
+
+[node name="Path2DBtn" type="Button" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/Path2DBox" unique_id=1491796409]
+layout_mode = 2
+text = "Browse"
+
+[node name="PathAudioBox" type="HBoxContainer" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox" unique_id=183657517]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/PathAudioBox" unique_id=1193668696]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+text = "Audio:"
+
+[node name="PathAudioEdit" type="LineEdit" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/PathAudioBox" unique_id=559033777]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "res://assets/audio"
+placeholder_text = "res://assets/audio"
+
+[node name="PathAudioBtn" type="Button" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/PathAudioBox" unique_id=1049358774]
+layout_mode = 2
+text = "Browse"
+
+[node name="PathShaderBox" type="HBoxContainer" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox" unique_id=1789204463]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/PathShaderBox" unique_id=290911804]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+text = "Shaders:"
+
+[node name="PathShaderEdit" type="LineEdit" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/PathShaderBox" unique_id=2109857326]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "res://assets/shaders"
+placeholder_text = "res://assets/shaders"
+
+[node name="PathShaderBtn" type="Button" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/PathShaderBox" unique_id=866708351]
+layout_mode = 2
+text = "Browse"
+
+[node name="HSeparator2" type="HSeparator" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=576437035]
+layout_mode = 2
+
+[node name="FormatsLabel" type="Label" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=474270375]
+layout_mode = 2
+text = "Active Formats"
+
+[node name="SettingsTree" type="Tree" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=1374659203]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+hide_root = true
+
+[node name="HSeparator3" type="HSeparator" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=582192234]
+layout_mode = 2
+
+[node name="DangerZoneLabel" type="Label" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=1373151021]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.435294, 0.435294, 1)
+text = "Danger Zone"
+
+[node name="DangerZoneBox" type="HBoxContainer" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=1347846678]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ResetButton" type="Button" parent="SettingsDialog/ScrollContainer/VBoxContainer/DangerZoneBox" unique_id=379439961]
+layout_mode = 2
+text = "Reset Settings to Default"
+
+[node name="ClearButton" type="Button" parent="SettingsDialog/ScrollContainer/VBoxContainer/DangerZoneBox" unique_id=980056231]
+layout_mode = 2
+text = "Clear Entire Asset Database"
+
+[node name="DirDialog" type="FileDialog" parent="SettingsDialog" unique_id=1398567986]
+title = "Open a Directory"
+size = Vector2i(600, 400)
+ok_button_text = "Select Current Folder"
+file_mode = 2
+
+[node name="TagContextMenu" type="PopupMenu" parent="." unique_id=1890144552]
+item_count = 1
+item_0/text = "Delete Tag Globally"
+item_0/id = 0

@@ -76,25 +76,15 @@ var tags_root: TreeItem
 @onready var reset_zoom_btn: Button = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar/HBox/ResetZoomBtn
 @onready var light_mode_btn: Button = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/ViewportToolbar/HBox/LightModeBtn
 
-
 func _ready() -> void:
 	# GUARD: Don't populate the massive DB if we are just editing the scene in the 2D workspace
 	if Engine.is_editor_hint() and get_parent() == get_tree().root:
 		return
 
-	preview_2d_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	asset_grid.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-
-	# Setup Preview Controller & Viewport Routing
-	preview_panel_container.clip_contents = true
-	preview_panel_container.gui_input.connect(_on_preview_gui_input)
-	preview_3d_viewport.get_parent().mouse_filter = Control.MOUSE_FILTER_IGNORE
-	preview_2d_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
 	# --- FIX: Create an explicit World3D to completely isolate the SubViewport from the Editor ---
 	var clean_env := Environment.new()
 	clean_env.background_mode = Environment.BG_COLOR
-	clean_env.background_color = Color(0.18, 0.18, 0.18)
+	clean_env.background_color = Color(0.18, 0.18, 0.18) # Dark neutral grey
 	clean_env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	clean_env.ambient_light_color = Color(1.0, 1.0, 1.0)
 	clean_env.ambient_light_energy = 0.4
@@ -105,21 +95,23 @@ func _ready() -> void:
 	isolated_world.environment = clean_env
 	preview_3d_viewport.world_3d = isolated_world
 
-	# Setup Camera and Pivot
-	var cam: Camera3D = preview_3d_viewport.get_node("Camera3D")
-	_preview_controller.camera = cam
-	_preview_controller.pivot = preview_3d_pivot
-	_preview_controller.texture_rect = preview_2d_rect
-
-	# Connect 3D Toolbar & Zoom/View UI
 	reset_origin_btn.pressed.connect(func() -> void: _preview_controller.reset_origin())
 	reset_zoom_btn.pressed.connect(func() -> void: _preview_controller.reset_zoom())
 	light_mode_btn.pressed.connect(_on_light_mode_pressed)
-	zoom_out_button.pressed.connect(_on_zoom_out_pressed)
-	zoom_in_button.pressed.connect(_on_zoom_in_pressed)
-	view_mode_button.pressed.connect(_on_view_mode_toggled)
 
-	# Connect Standard Asset Manager UI
+	preview_2d_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	asset_grid.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
+	# Setup Preview Controller
+	preview_panel_container.clip_contents = true
+	preview_panel_container.gui_input.connect(_on_preview_gui_input)
+	preview_3d_viewport.get_parent().mouse_filter = Control.MOUSE_FILTER_IGNORE
+	preview_2d_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	_preview_controller.pivot = preview_3d_pivot
+	_preview_controller.camera = preview_3d_viewport.get_node("Camera3D")
+	_preview_controller.texture_rect = preview_2d_rect
+
 	scan_button.pressed.connect(_on_scan_button_pressed)
 	settings_button.pressed.connect(_on_settings_button_pressed)
 	folder_dialog.dir_selected.connect(_on_folder_selected)
@@ -140,19 +132,22 @@ func _ready() -> void:
 	tag_context_menu.id_pressed.connect(_on_tag_context_menu_id_pressed)
 	audio_player.finished.connect(_on_audio_finished)
 
-	# Connect Settings Signals
 	settings_dialog.settings_changed.connect(_on_settings_changed)
 	settings_dialog.database_cleared.connect(_on_database_cleared)
 
-	# Setup Placeholder Texture for grid
-	var blank_img := Image.create_empty(80, 80, false, Image.FORMAT_RGBA8)
+	zoom_out_button.pressed.connect(_on_zoom_out_pressed)
+	zoom_in_button.pressed.connect(_on_zoom_in_pressed)
+
+	# We use a 1x1 image so Godot can stretch it to whatever the fixed_icon_size is
+	var blank_img := Image.create_empty(1, 1, false, Image.FORMAT_RGBA8)
 	_blank_placeholder_tex = ImageTexture.create_from_image(blank_img)
 
-	# Initialize Data
+	view_mode_button.pressed.connect(_on_view_mode_toggled)
+	_apply_view_mode_settings()
+
 	_load_database()
 	settings_dialog.setup(db)
 	_update_audio_volume()
-	_apply_view_mode_settings()
 	_rebuild_nav_tree()
 
 func scan_directory(path: String) -> void:
