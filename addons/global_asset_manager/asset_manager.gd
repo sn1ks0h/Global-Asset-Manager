@@ -38,6 +38,7 @@ var _light_mode_idx: int = 0
 var _loaded_3d_node: Node3D = null
 var _preview_controller: PreviewController = PreviewController.new()
 var _search_query: String = ""
+var _selection_update_pending: bool = false
 var _tag_display_limit: int = 20
 var _tag_to_delete: String = ""
 var _thumbnail_cache: Dictionary = {}
@@ -344,6 +345,38 @@ func _convert_importer_meshes(node: Node) -> Node:
 
 	return new_node
 
+func _deferred_selection_update() -> void:
+	_selection_update_pending = false
+	var selected := asset_grid.get_selected_items()
+
+	var has_selection := selected.size() > 0
+	var is_single := selected.size() == 1
+	open_location_button.disabled = not has_selection
+	send_to_project_button.disabled = not has_selection
+	open_external_button.disabled = not is_single
+
+	if selected.size() == 0:
+		current_selected_path = ""
+		file_name_label.text = "No asset selected"
+		_clear_current_preview()
+		tag_input_field.editable = false
+		_update_tag_ui()
+
+	elif selected.size() == 1:
+		var path: String = asset_grid.get_item_metadata(selected[0])
+		tag_input_field.editable = true
+		load_asset_preview(path)
+
+	else:
+		current_selected_path = ""
+		file_name_label.text = str(selected.size()) + " assets selected"
+		_clear_current_preview()
+		preview_2d_rect.visible = false
+		preview_3d_viewport.get_parent().visible = false
+		replay_button.visible = false
+		tag_input_field.editable = true
+		_update_tag_ui()
+
 func _delete_tag_globally(tag_text: String) -> void:
 	var modified := false
 	for path: String in db["assets"].keys():
@@ -503,35 +536,10 @@ func _get_type_tag(type: AssetType) -> String:
 		_: return "unknown"
 
 func _handle_selection_change() -> void:
-	var selected := asset_grid.get_selected_items()
-
-	var has_selection := selected.size() > 0
-	var is_single := selected.size() == 1
-	open_location_button.disabled = not has_selection
-	send_to_project_button.disabled = not has_selection
-	open_external_button.disabled = not is_single
-
-	if selected.size() == 0:
-		current_selected_path = ""
-		file_name_label.text = "No asset selected"
-		_clear_current_preview()
-		tag_input_field.editable = false
-		_update_tag_ui()
-
-	elif selected.size() == 1:
-		var path: String = asset_grid.get_item_metadata(selected[0])
-		tag_input_field.editable = true
-		load_asset_preview(path)
-
-	else:
-		current_selected_path = ""
-		file_name_label.text = str(selected.size()) + " assets selected"
-		_clear_current_preview()
-		preview_2d_rect.visible = false
-		preview_3d_viewport.get_parent().visible = false
-		replay_button.visible = false
-		tag_input_field.editable = true
-		_update_tag_ui()
+	if _selection_update_pending:
+		return
+	_selection_update_pending = true
+	call_deferred("_deferred_selection_update")
 
 func _load_3d_model(path: String) -> void:
 	var ext := path.get_extension().to_lower()
