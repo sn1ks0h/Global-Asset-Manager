@@ -3,7 +3,6 @@
 @static_unload
 class_name AssetManager
 extends Control
-## Main interface for the Global Asset Manager plugin.
 
 signal asset_selected(path: String)
 signal db_updated
@@ -30,6 +29,7 @@ var _blank_placeholder_tex: ImageTexture
 var _current_asset_type: AssetType = AssetType.UNKNOWN
 var _current_filter_folder: String = ""
 var _current_page: int = 0
+var _folder_context_path: String = ""
 var _grid_icon_size: int = 40
 var _grid_population_version: int = 0
 var _is_grid_view: bool = false
@@ -744,11 +744,22 @@ func _on_nav_tree_item_mouse_selected(position: Vector2, mouse_button_index: int
 		var item := nav_tree.get_item_at_position(position)
 		if item:
 			var meta: Variant = item.get_metadata(0)
-			if meta and meta is Dictionary and meta.get("type") == "tag":
-				item.deselect(0)
-				_tag_to_delete = meta.get("value", "")
-				tag_context_menu.position = DisplayServer.mouse_get_position()
-				tag_context_menu.popup()
+			if meta and meta is Dictionary:
+				tag_context_menu.clear()
+				if meta.get("type") == "tag":
+					item.deselect(0)
+					_select_folder_in_tree(_current_filter_folder)
+					_tag_to_delete = meta.get("value", "")
+					tag_context_menu.add_item("Delete Tag Globally", 0)
+					tag_context_menu.position = DisplayServer.mouse_get_position()
+					tag_context_menu.popup()
+				elif meta.get("type") == "folder":
+					item.select(0)
+					_folder_context_path = meta.get("path", "")
+					tag_context_menu.add_item("Rescan Folder", 1)
+					tag_context_menu.add_item("Remove Folder", 2)
+					tag_context_menu.position = DisplayServer.mouse_get_position()
+					tag_context_menu.popup()
 
 func _on_nav_tree_item_selected() -> void:
 	var selected := nav_tree.get_selected()
@@ -764,19 +775,23 @@ func _on_nav_tree_item_selected() -> void:
 			_populate_asset_grid()
 			_handle_selection_change()
 			call_deferred("_update_tags_tree")
+		elif meta.get("type") == "folder_root":
+			_current_filter_folder = ""
+			_current_page = 0
+			_tag_display_limit = 20
+			_populate_asset_grid()
+			_handle_selection_change()
+			call_deferred("_update_tags_tree")
 		elif meta.get("type") == "load_more":
 			_tag_display_limit += 20
 			selected.deselect(0)
+			_select_folder_in_tree(_current_filter_folder)
 			call_deferred("_update_tags_tree")
 		elif meta.get("type") == "tag":
 			selected.deselect(0)
+			_select_folder_in_tree(_current_filter_folder)
 	else:
-		_current_filter_folder = ""
-		_current_page = 0
-		_tag_display_limit = 20
-		_populate_asset_grid()
-		_handle_selection_change()
-		call_deferred("_update_tags_tree")
+		_select_folder_in_tree(_current_filter_folder)
 
 func _on_next_page_pressed() -> void:
 	_current_page += 1
@@ -834,6 +849,10 @@ func _on_settings_changed() -> void:
 func _on_tag_context_menu_id_pressed(id: int) -> void:
 	if id == 0 and not _tag_to_delete.is_empty():
 		_delete_tag_globally(_tag_to_delete)
+	elif id == 1 and not _folder_context_path.is_empty():
+		_rescan_folder(_folder_context_path)
+	elif id == 2 and not _folder_context_path.is_empty():
+		_remove_folder(_folder_context_path)
 
 func _on_tag_input_submitted(new_text: String) -> void:
 	tag_input_field.clear()
@@ -946,6 +965,7 @@ func _rebuild_nav_tree() -> void:
 
 	folders_root = nav_tree.create_item(root)
 	folders_root.set_text(0, "Scanned Folders")
+	folders_root.set_metadata(0, {"type": "folder_root"})
 	for folder: String in db["folders"]:
 		var f_item := nav_tree.create_item(folders_root)
 		f_item.set_text(0, folder.get_file())
@@ -955,6 +975,7 @@ func _rebuild_nav_tree() -> void:
 	tags_root.set_text(0, "Tags")
 
 	_update_tags_tree()
+	_select_folder_in_tree(_current_filter_folder)
 
 func _recursive_scan(dir: DirAccess, current_path: String, root_path: String) -> void:
 	dir.list_dir_begin()
@@ -999,6 +1020,45 @@ func _recursive_scan(dir: DirAccess, current_path: String, root_path: String) ->
 		file_name = dir.get_next()
 	dir.list_dir_end()
 
+func _remove_folder(folder_path: String) -> void:
+	if db["folders"].has(folder_path):
+		db["folders"].erase(folder_path)
+
+	var paths_to_remove: Array[String] = []
+	for asset_path in db["assets"].keys():
+		if asset_path.begins_with(folder_path):
+			paths_to_remove.append(asset_path)
+
+	for p in paths_to_remove:
+		db["assets"].erase(p)
+
+	if _current_filter_folder == folder_path:
+		_current_filter_folder = ""
+
+	_save_database()
+	_rebuild_nav_tree()
+	_populate_asset_grid()
+	_handle_selection_change()
+
+func _rescan_folder(folder_path: String) -> void:
+	var dir := DirAccess.open(folder_path)
+	if dir:
+		_recursive_scan(dir, folder_path, folder_path)
+
+	var paths_to_remove: Array[String] = []
+	for asset_path in db["assets"].keys():
+		if asset_path.begins_with(folder_path):
+			if not FileAccess.file_exists(asset_path):
+				paths_to_remove.append(asset_path)
+
+	for p in paths_to_remove:
+		db["assets"].erase(p)
+
+	_save_database()
+	_rebuild_nav_tree()
+	_populate_asset_grid()
+	db_updated.emit()
+
 func _save_database() -> void:
 	var file := FileAccess.open(DB_FILE_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(db, "\t"))
@@ -1009,6 +1069,10 @@ func _select_folder_in_tree(folder_path: String) -> void:
 		return
 
 	var target_root := root.get_child(0)
+	if folder_path.is_empty():
+		target_root.select(0)
+		return
+
 	for i in range(target_root.get_child_count()):
 		var item := target_root.get_child(i)
 		var meta: Variant = item.get_metadata(0)
@@ -1016,6 +1080,9 @@ func _select_folder_in_tree(folder_path: String) -> void:
 			item.select(0)
 			nav_tree.scroll_to_item(item)
 			return
+
+	target_root.select(0)
+	_current_filter_folder = ""
 
 func _update_audio_volume() -> void:
 	var val: float = db["settings"].get("volume", 50.0)
