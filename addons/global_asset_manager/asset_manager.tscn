@@ -67,8 +67,6 @@ texture_filter = 1
 layout_mode = 2
 size_flags_vertical = 3
 select_mode = 1
-icon_mode = 0
-fixed_icon_size = Vector2i(64, 64)
 
 [node name="PaginationContainer" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel" unique_id=751157778]
 layout_mode = 2
@@ -82,12 +80,11 @@ text = "< Prev"
 [node name="PageLabel" type="Label" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/PaginationContainer" unique_id=1158757073]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Page 1 of 1"
+text = "Page 1 of 608"
 horizontal_alignment = 1
 
 [node name="NextPageButton" type="Button" parent="MarginContainer/MainSplit/ContentSplit/CenterPanel/PaginationContainer" unique_id=1287330111]
 layout_mode = 2
-disabled = true
 text = "Next >"
 
 [node name="PreviewPanel" type="VBoxContainer" parent="MarginContainer/MainSplit/ContentSplit" unique_id=1928029523]
@@ -95,11 +92,13 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="PreviewContainer" type="PanelContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel" unique_id=971126350]
+clip_contents = true
 layout_mode = 2
 size_flags_vertical = 3
 
 [node name="SubViewportContainer" type="SubViewportContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer" unique_id=556558526]
 layout_mode = 2
+mouse_filter = 2
 stretch = true
 
 [node name="SubViewport" type="SubViewport" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer" unique_id=2026732423]
@@ -120,6 +119,7 @@ transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -
 visible = false
 texture_filter = 1
 layout_mode = 2
+mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
@@ -197,6 +197,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=447829074]
+volume_db = -12.0412
 
 [node name="FolderDialog" type="FileDialog" parent="." unique_id=751017296]
 title = "Open a Directory"
@@ -228,11 +229,11 @@ theme_override_constants/separation = 12
 
 [node name="VolumeLabel" type="Label" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=597664857]
 layout_mode = 2
-text = "Max Audio Volume: 50%"
+text = "Max Audio Volume: 25%"
 
 [node name="VolumeSlider" type="HSlider" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=337623076]
 layout_mode = 2
-value = 50.0
+value = 25.0
 
 [node name="HSeparator1" type="HSeparator" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=898958503]
 layout_mode = 2
@@ -256,6 +257,7 @@ text = "3D Models:"
 [node name="Path3DEdit" type="LineEdit" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/Path3DBox" unique_id=1729944401]
 layout_mode = 2
 size_flags_horizontal = 3
+text = "res://assets/models"
 placeholder_text = "res://assets/models"
 
 [node name="Path3DBtn" type="Button" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/Path3DBox" unique_id=1270886819]
@@ -273,6 +275,7 @@ text = "2D Images:"
 [node name="Path2DEdit" type="LineEdit" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/Path2DBox" unique_id=771401102]
 layout_mode = 2
 size_flags_horizontal = 3
+text = "res://assets/images"
 placeholder_text = "res://assets/images"
 
 [node name="Path2DBtn" type="Button" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/Path2DBox" unique_id=1491796409]
@@ -290,6 +293,7 @@ text = "Audio:"
 [node name="PathAudioEdit" type="LineEdit" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/PathAudioBox" unique_id=559033777]
 layout_mode = 2
 size_flags_horizontal = 3
+text = "res://assets/audio"
 placeholder_text = "res://assets/audio"
 
 [node name="PathAudioBtn" type="Button" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/PathAudioBox" unique_id=1049358774]
@@ -307,6 +311,7 @@ text = "Shaders:"
 [node name="PathShaderEdit" type="LineEdit" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/PathShaderBox" unique_id=2109857326]
 layout_mode = 2
 size_flags_horizontal = 3
+text = "res://assets/shaders"
 placeholder_text = "res://assets/shaders"
 
 [node name="PathShaderBtn" type="Button" parent="SettingsDialog/ScrollContainer/VBoxContainer/PathsVBox/PathShaderBox" unique_id=866708351]

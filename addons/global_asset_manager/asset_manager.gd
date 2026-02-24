@@ -28,8 +28,6 @@ var _current_asset_type: AssetType = AssetType.UNKNOWN
 var _loaded_3d_node: Node3D = null
 var _current_filter_folder: String = ""
 var _active_filter_tags: Array[String] = []
-var _is_dragging_3d: bool = false
-var _last_mouse_pos: Vector2 = Vector2.ZERO
 var _thumbnail_cache: Dictionary = {}
 var _tag_to_delete: String = ""
 var _grid_population_version: int = 0
@@ -37,6 +35,8 @@ var _current_page: int = 0
 var _items_per_page: int = 100
 var _search_query: String = ""
 var _tag_display_limit: int = 20
+
+var _preview_controller: PreviewController = PreviewController.new()
 
 var folders_root: TreeItem
 var tags_root: TreeItem
@@ -49,6 +49,7 @@ var tags_root: TreeItem
 @onready var prev_page_button: Button = $MarginContainer/MainSplit/ContentSplit/CenterPanel/PaginationContainer/PrevPageButton
 @onready var next_page_button: Button = $MarginContainer/MainSplit/ContentSplit/CenterPanel/PaginationContainer/NextPageButton
 @onready var page_label: Label = $MarginContainer/MainSplit/ContentSplit/CenterPanel/PaginationContainer/PageLabel
+@onready var preview_panel_container: PanelContainer = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer
 @onready var preview_3d_viewport: SubViewport = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport
 @onready var preview_3d_pivot: Node3D = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport/ModelPivot
 @onready var preview_2d_rect: TextureRect = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/TextureRect
@@ -66,8 +67,25 @@ var tags_root: TreeItem
 @onready var tag_context_menu: PopupMenu = $TagContextMenu
 
 func _ready() -> void:
+	# GUARD: Don't populate the massive DB if we are just editing the scene in the 2D workspace
+	if Engine.is_editor_hint() and get_parent() == get_tree().root:
+		return
+
 	preview_2d_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	asset_grid.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
+	preview_2d_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	asset_grid.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
+	# Setup Preview Controller
+	preview_panel_container.clip_contents = true
+	preview_panel_container.gui_input.connect(_on_preview_gui_input)
+	preview_3d_viewport.get_parent().mouse_filter = Control.MOUSE_FILTER_IGNORE
+	preview_2d_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	_preview_controller.pivot = preview_3d_pivot
+	_preview_controller.camera = preview_3d_viewport.get_node("Camera3D")
+	_preview_controller.texture_rect = preview_2d_rect
 
 	scan_button.pressed.connect(_on_scan_button_pressed)
 	settings_button.pressed.connect(_on_settings_button_pressed)
@@ -86,7 +104,6 @@ func _ready() -> void:
 	open_external_button.pressed.connect(_on_open_external_pressed)
 	open_location_button.pressed.connect(_on_open_location_pressed)
 	send_to_project_button.pressed.connect(_on_send_to_project_pressed)
-	preview_3d_viewport.get_parent().gui_input.connect(_on_preview_gui_input)
 	tag_context_menu.id_pressed.connect(_on_tag_context_menu_id_pressed)
 	audio_player.finished.connect(_on_audio_finished)
 
@@ -547,7 +564,8 @@ func _clear_current_preview() -> void:
 	audio_player.stop()
 	audio_player.stream = null
 	replay_button.text = "Replay"
-	preview_3d_pivot.rotation = Vector3.ZERO
+
+	_preview_controller.reset_views()
 
 	if is_instance_valid(_loaded_3d_node):
 		_loaded_3d_node.queue_free()
@@ -570,10 +588,59 @@ func _load_3d_model(path: String) -> void:
 			_loaded_3d_node = gltf.generate_scene(state)
 
 	if err == OK and _loaded_3d_node:
+		# Add the node to the SceneTree FIRST so queue_free() works properly during conversion
 		preview_3d_pivot.add_child(_loaded_3d_node)
+		_loaded_3d_node = _convert_importer_meshes(_loaded_3d_node)
 		_center_and_scale_3d_model(_loaded_3d_node)
 	else:
-		file_name_label.text += " (Failed to Parse FBX)"
+		file_name_label.text += " (Failed to Parse 3D Model)"
+
+func _convert_importer_meshes(node: Node) -> Node:
+	if not is_instance_valid(node):
+		return node
+
+	var new_node: Node = node
+
+	if node.get_class() == "ImporterMeshInstance3D":
+		var mi := MeshInstance3D.new()
+		mi.name = node.name
+		if node is Node3D:
+			mi.transform = node.transform
+
+		var importer_mesh: Variant = node.get("mesh")
+		if importer_mesh != null and importer_mesh.has_method("get_mesh"):
+			mi.mesh = importer_mesh.get_mesh()
+
+		var skin: Variant = node.get("skin")
+		if skin != null:
+			mi.skin = skin
+
+		var skeleton_path: Variant = node.get("skeleton_path")
+		if skeleton_path != null:
+			mi.skeleton = skeleton_path
+
+		# Move children to the new MeshInstance3D
+		var children := node.get_children()
+		for child in children:
+			node.remove_child(child)
+			mi.add_child(child)
+
+		# Replace the old ImporterMeshInstance3D in the active SceneTree
+		var parent := node.get_parent()
+		if parent != null:
+			parent.add_child(mi)
+			node.queue_free()
+		else:
+			node.free()
+
+		new_node = mi
+
+	# Iterate over a duplicate array because we are modifying the tree in place
+	var current_children := new_node.get_children()
+	for child in current_children:
+		_convert_importer_meshes(child)
+
+	return new_node
 
 func _center_and_scale_3d_model(node: Node3D) -> void:
 	var meshes: Array[MeshInstance3D] = []
@@ -582,15 +649,22 @@ func _center_and_scale_3d_model(node: Node3D) -> void:
 	if meshes.is_empty():
 		return
 
-	var aabb: AABB = meshes[0].get_aabb()
-	aabb.position += meshes[0].global_position
+	var aabb := AABB()
+	var first := true
 
-	for i in range(1, meshes.size()):
-		var mesh_aabb := meshes[i].get_aabb()
-		mesh_aabb.position += meshes[i].global_position
-		aabb = aabb.merge(mesh_aabb)
+	for mi in meshes:
+		var mi_aabb := mi.get_aabb()
+		# Safely convert the local AABB of the mesh into the root node's coordinate space
+		var xform := node.global_transform.affine_inverse() * mi.global_transform
+		var xformed_aabb := xform * mi_aabb
 
-	var max_size: float = max(aabb.size.x, max(aabb.size.y, aabb.size.z))
+		if first:
+			aabb = xformed_aabb
+			first = false
+		else:
+			aabb = aabb.merge(xformed_aabb)
+
+	var max_size: float = maxf(aabb.size.x, maxf(aabb.size.y, aabb.size.z))
 	if max_size > 0:
 		var target_scale: float = 2.0 / max_size
 		node.scale = Vector3(target_scale, target_scale, target_scale)
@@ -935,26 +1009,10 @@ func _on_send_to_project_pressed() -> void:
 	_export_selected_to_project()
 
 func _on_preview_gui_input(event: InputEvent) -> void:
-	if _current_asset_type != AssetType.MODEL_3D:
-		return
-
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			if event.pressed:
-				_is_dragging_3d = true
-				_last_mouse_pos = event.position
-			else:
-				_is_dragging_3d = false
-
-	elif event is InputEventMouseMotion and _is_dragging_3d:
-		var motion := event as InputEventMouseMotion
-		var delta: Vector2 = motion.position - _last_mouse_pos
-		_last_mouse_pos = motion.position
-
-		preview_3d_pivot.rotate_y(-delta.x * 0.01)
-
-		preview_3d_pivot.rotation.x += -delta.y * 0.01
-		preview_3d_pivot.rotation.x = clampf(preview_3d_pivot.rotation.x, -PI / 2.5, PI / 2.5)
+	if _current_asset_type == AssetType.MODEL_3D:
+		_preview_controller.handle_3d_input(event)
+	elif _current_asset_type == AssetType.IMAGE_2D:
+		_preview_controller.handle_2d_input(event)
 
 func _on_settings_changed() -> void:
 	_update_audio_volume()
