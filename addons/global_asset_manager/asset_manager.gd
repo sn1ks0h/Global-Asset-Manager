@@ -962,8 +962,12 @@ func _on_nav_tree_item_mouse_selected(position: Vector2, mouse_button_index: int
 		if item:
 			var meta: Variant = item.get_metadata(0)
 			if meta and meta is Dictionary and meta.get("type") == "tag":
+				# Deselect it so it doesn't stay highlighted in blue
+				item.deselect(0)
 				_tag_to_delete = meta.get("value", "")
-				tag_context_menu.position = Vector2i(get_global_mouse_position())
+
+				# Use DisplayServer to get absolute OS screen coordinates
+				tag_context_menu.position = DisplayServer.mouse_get_position()
 				tag_context_menu.popup()
 
 func _on_tag_context_menu_id_pressed(id: int) -> void:
