@@ -81,7 +81,7 @@ func _ready() -> void:
 	if Engine.is_editor_hint() and get_parent() == get_tree().root:
 		return
 
-	# Inject a clean, bloom-free environment for pure 3D rendering
+	# --- FIX: Create an explicit World3D to completely isolate the SubViewport from the Editor ---
 	var clean_env := Environment.new()
 	clean_env.background_mode = Environment.BG_COLOR
 	clean_env.background_color = Color(0.18, 0.18, 0.18) # Dark neutral grey
@@ -90,16 +90,14 @@ func _ready() -> void:
 	clean_env.ambient_light_energy = 0.4
 	clean_env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	clean_env.glow_enabled = false
-	var world_env := WorldEnvironment.new()
-	world_env.environment = clean_env
-	preview_3d_viewport.add_child(world_env)
+
+	var isolated_world := World3D.new()
+	isolated_world.environment = clean_env
+	preview_3d_viewport.world_3d = isolated_world
 
 	reset_origin_btn.pressed.connect(func() -> void: _preview_controller.reset_origin())
 	reset_zoom_btn.pressed.connect(func() -> void: _preview_controller.reset_zoom())
 	light_mode_btn.pressed.connect(_on_light_mode_pressed)
-
-	preview_2d_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	asset_grid.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 	preview_2d_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	asset_grid.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST

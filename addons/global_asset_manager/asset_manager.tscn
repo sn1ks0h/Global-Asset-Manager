@@ -120,6 +120,7 @@ size_flags_vertical = 3
 
 [node name="SubViewportContainer" type="SubViewportContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer" unique_id=1729812474]
 layout_mode = 2
+mouse_filter = 2
 stretch = true
 
 [node name="SubViewport" type="SubViewport" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer" unique_id=140946012]
@@ -137,23 +138,11 @@ light_energy = 0.5
 
 [node name="ModelPivot" type="Node3D" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport" unique_id=182794437]
 
-[node name="Camera3D2" type="Camera3D" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport" unique_id=1218724792]
-transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 2, 2, 3)
-current = true
-
-[node name="DirectionalLight3D2" type="DirectionalLight3D" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport" unique_id=1775709677]
-transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 5, 0)
-
-[node name="ModelPivot2" type="Node3D" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport" unique_id=1961491197]
-
-[node name="SubViewport2" type="SubViewport" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer" unique_id=2026732423]
-handle_input_locally = false
-size = Vector2i(446, 241)
-render_target_update_mode = 4
-
 [node name="TextureRect" type="TextureRect" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer" unique_id=1268634186]
 visible = false
+texture_filter = 1
 layout_mode = 2
+mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
@@ -182,19 +171,6 @@ text = "100%"
 custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
 text = "Lit"
-
-[node name="SubViewportContainer2" type="SubViewportContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer" unique_id=556558526]
-layout_mode = 2
-mouse_filter = 2
-stretch = true
-
-[node name="TextureRect2" type="TextureRect" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer" unique_id=208930947]
-visible = false
-texture_filter = 1
-layout_mode = 2
-mouse_filter = 2
-expand_mode = 1
-stretch_mode = 5
 
 [node name="DetailsPanel" type="VBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel" unique_id=1870626175]
 layout_mode = 2
