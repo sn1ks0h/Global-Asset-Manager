@@ -103,7 +103,7 @@ stretch = true
 
 [node name="SubViewport" type="SubViewport" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer" unique_id=2026732423]
 handle_input_locally = false
-size = Vector2i(446, 377)
+size = Vector2i(446, 241)
 render_target_update_mode = 4
 
 [node name="Camera3D" type="Camera3D" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport" unique_id=1218724792]
@@ -166,6 +166,7 @@ layout_mode = 2
 text = "Current Tags (Click to remove):"
 
 [node name="CurrentTagsScroll" type="ScrollContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=325549676]
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
@@ -187,6 +188,7 @@ layout_mode = 2
 text = "Quick Add Known Tags:"
 
 [node name="AvailableTagsScroll" type="ScrollContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=82847435]
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
