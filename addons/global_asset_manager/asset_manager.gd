@@ -785,24 +785,34 @@ func _on_nav_tree_item_selected() -> void:
 	var meta: Variant = selected.get_metadata(0)
 	if meta and meta is Dictionary:
 		if meta.get("type") == "folder":
-			_current_filter_folder = meta.get("path", "")
+			var new_path: String = meta.get("path", "")
+			if _current_filter_folder == new_path:
+				return # FIX: Ignore the signal if we are just re-highlighting the active folder
+
+			_current_filter_folder = new_path
 			_current_page = 0
 			_tag_display_limit = 20
 			_populate_asset_grid()
 			_handle_selection_change()
 			call_deferred("_update_tags_tree")
+
 		elif meta.get("type") == "folder_root":
+			if _current_filter_folder == "":
+				return # FIX: Ignore if already at the root
+
 			_current_filter_folder = ""
 			_current_page = 0
 			_tag_display_limit = 20
 			_populate_asset_grid()
 			_handle_selection_change()
 			call_deferred("_update_tags_tree")
+
 		elif meta.get("type") == "load_more":
 			_tag_display_limit += 20
 			selected.deselect(0)
 			_select_folder_in_tree(_current_filter_folder)
 			call_deferred("_update_tags_tree")
+
 		elif meta.get("type") == "tag":
 			selected.deselect(0)
 			_select_folder_in_tree(_current_filter_folder)
