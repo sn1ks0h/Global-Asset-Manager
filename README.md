@@ -1,15 +1,16 @@
 # Godot Global Asset Manager
 
-A powerful, highly-performant in-editor asset hub for Godot 4.6+. 
+A powerful, highly-performant in-editor asset hub for Godot 4. 
 
-Tired of alt-tabbing to your OS file explorer to dig through thousands of gigabytes of downloaded asset packs? The Global Asset Manager allows you to scan massive local asset libraries (like the 65,000+ file Kenney All-in-One pack), dynamically filter them with tags and fuzzy search, preview them, and instantly copy them into your active project—without ever leaving the Godot Editor.
+The Global Asset Manager allows you to scan massive local asset libraries (like the 65,000+ file Kenney All-in-One pack), dynamically filter them with tags and fuzzy search, preview them, and instantly copy them into your active project—without ever leaving the Godot Editor.
 
 ## ✨ Features
 
 * **Massive Library Support:** Asynchronous background loading and pagination ensure the editor never freezes, even when browsing tens of thousands of files at once.
 * **Smart Auto-Tagging:** Automatically generates tags based on your local folder structure (e.g., `sounds/impacts/wood.wav` automatically gets `#sounds` and `#impacts` tags).
 * **Dynamic Tag Filtering:** Multi-select tags in the sidebar to drill down results. Tags instantly update to show how many assets they contain, un-related tags hide automatically, and selected tags pin to the top.
-* **Fuzzy Search:** Instantly find what you need. A search for "swrd" will confidently pull up `wooden_sword_01.glb`. Exact matches are automatically prioritized to the top.
+* **Fuzzy Search:** Instantly find what you need. A search for ***swrd*** will confidently pull up `wooden_sword_01.glb`. Exact matches are automatically prioritized to the top.
+  * Search for only exact matches by using quotes around your search query. Searching for "fall" returns _leaves_fall.jpg_ instead of _leaves_fall.jpg_, _football.jpg_, and _fireball.jpg_.
 * **In-Editor Previews:**
   * **3D Models:** Click and drag to smoothly spin models in a custom 3D viewport.
   * **2D Images:** Crisp, nearest-neighbor filtered previews perfect for pixel art.
@@ -28,8 +29,8 @@ You can enable or disable these formats individually from the Settings menu to p
 ## 🚀 Installation
 
 1. Download or clone this repository.
-2. Move the `asset_manager` folder into your Godot project's `addons` directory (`res://addons/asset_manager/`).
-3. Open your project in Godot 4.6+.
+2. Move the `global_asset_manager` folder into your Godot project's `addons` directory (`res://addons/global_asset_manager/`).
+3. Open your project in Godot 4.
 4. Go to **Project > Project Settings > Plugins**.
 5. Find **Global Asset Manager** and check the **Enable** box.
 6. The tool will appear as a new "AssetHub" tab in your main central workspace.
