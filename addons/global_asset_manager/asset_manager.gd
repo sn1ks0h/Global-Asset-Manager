@@ -197,6 +197,10 @@ func remove_tag_from_selected_assets(tag_text: String) -> void:
 		call_deferred("_update_tags_tree")
 		_update_tag_ui()
 
+		if _active_filter_tags.has(tag_text):
+			_populate_asset_grid()
+			_handle_selection_change()
+
 func scan_directory(path: String) -> void:
 	if not db["folders"].has(path):
 		db["folders"].append(path)
