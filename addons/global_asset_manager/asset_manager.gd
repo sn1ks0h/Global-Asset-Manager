@@ -621,6 +621,8 @@ func _load_database() -> void:
 
 	if not db["settings"].has("grid_icon_size"):
 		db["settings"]["grid_icon_size"] = 40
+	if not db["settings"].has("wav_preview_length"):
+		db["settings"]["wav_preview_length"] = 10
 
 	_grid_icon_size = db["settings"]["grid_icon_size"]
 
@@ -682,8 +684,9 @@ func _load_wav_from_file(path: String) -> AudioStreamWAV:
 			format_found = true
 
 		elif chunk_id == "data":
+			var preview_length: int = db["settings"].get("wav_preview_length", 10)
 			var bytes_per_sec: int = sample_rate * channels * (bits_per_sample / 8)
-			var max_preview_bytes: int = bytes_per_sec * 10
+			var max_preview_bytes: int = bytes_per_sec * preview_length
 			var bytes_to_read: int = mini(chunk_size, max_preview_bytes)
 
 			var raw_data := file.get_buffer(bytes_to_read)
@@ -791,7 +794,7 @@ func _on_nav_tree_item_selected() -> void:
 		if meta.get("type") == "folder":
 			var new_path: String = meta.get("path", "")
 			if _current_filter_folder == new_path:
-				return # FIX: Ignore the signal if we are just re-highlighting the active folder
+				return
 
 			_current_filter_folder = new_path
 			_current_page = 0
@@ -802,7 +805,7 @@ func _on_nav_tree_item_selected() -> void:
 
 		elif meta.get("type") == "folder_root":
 			if _current_filter_folder == "":
-				return # FIX: Ignore if already at the root
+				return
 
 			_current_filter_folder = ""
 			_current_page = 0

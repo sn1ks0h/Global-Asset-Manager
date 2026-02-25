@@ -269,8 +269,10 @@ file_mode = 2
 access = 2
 
 [node name="SettingsDialog" type="AcceptDialog" parent="." unique_id=1835870348]
+oversampling_override = 1.0
 title = "Settings"
-size = Vector2i(550, 650)
+position = Vector2i(0, 36)
+size = Vector2i(788, 650)
 script = ExtResource("2_fghij")
 
 [node name="ScrollContainer" type="ScrollContainer" parent="SettingsDialog" unique_id=1304404260]
@@ -279,8 +281,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 8.0
 offset_top = 8.0
-offset_right = 542.0
-offset_bottom = 601.0
+offset_right = -8.0
+offset_bottom = -49.0
 horizontal_scroll_mode = 0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="SettingsDialog/ScrollContainer" unique_id=1102077803]
@@ -296,6 +298,22 @@ text = "Max Audio Volume: 25%"
 [node name="VolumeSlider" type="HSlider" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=337623076]
 layout_mode = 2
 value = 25.0
+
+[node name="WavLengthLabel" type="Label" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=1860502584]
+layout_mode = 2
+text = "WAV Preview Length: 6s"
+
+[node name="WavLengthSlider" type="HSlider" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=1204250806]
+layout_mode = 2
+min_value = 5.0
+max_value = 60.0
+value = 6.0
+
+[node name="WavDisclaimerLabel" type="Label" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=1950677763]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.43529412, 0.43529412, 1)
+theme_override_font_sizes/font_size = 14
+text = "* Higher values may cause performance drops or high RAM usage when previewing large WAV files."
 
 [node name="HSeparator1" type="HSeparator" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=898958503]
 layout_mode = 2
