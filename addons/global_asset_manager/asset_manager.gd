@@ -461,6 +461,14 @@ func _export_selected_to_project() -> void:
 		send_to_project_button.text = "Exported " + str(export_count) + " file(s)!"
 		get_tree().create_timer(2.0).timeout.connect(func() -> void: send_to_project_button.text = original_text)
 
+func _filter_by_tag(tag_text: String) -> void:
+	if not _active_filter_tags.has(tag_text):
+		_active_filter_tags.append(tag_text)
+		_current_page = 0
+		_populate_asset_grid()
+		_handle_selection_change()
+		call_deferred("_update_tags_tree")
+
 func _find_meshes_recursive(node: Node, result: Array[MeshInstance3D]) -> void:
 	if node is MeshInstance3D:
 		result.append(node)
@@ -1126,6 +1134,11 @@ func _update_tag_ui() -> void:
 		btn.text = tag + " (x)"
 		var captured_tag := tag
 		btn.pressed.connect(func() -> void: remove_tag_from_selected_assets(captured_tag))
+		btn.gui_input.connect(func(event: InputEvent) -> void:
+			if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+				_filter_by_tag(captured_tag)
+		)
+		btn.tooltip_text = "Left-Click: Remove tag\nRight-Click: Filter by tag"
 		tag_flow_container.add_child(btn)
 
 	var search_text := tag_input_field.text.strip_edges().to_lower().replace(" ", "_")
