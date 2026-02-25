@@ -895,6 +895,12 @@ func _populate_asset_grid() -> void:
 
 	var matching_paths: Array[String] = []
 
+	var is_exact_search := false
+	var actual_search_query := _search_query
+	if _search_query.length() >= 2 and _search_query.begins_with("\"") and _search_query.ends_with("\""):
+		is_exact_search = true
+		actual_search_query = _search_query.substr(1, _search_query.length() - 2)
+
 	for path: String in db["assets"].keys():
 		var data: Dictionary = db["assets"][path]
 		var should_add := true
@@ -909,20 +915,24 @@ func _populate_asset_grid() -> void:
 					should_add = false
 					break
 
-		if should_add and not _search_query.is_empty():
+		if should_add and not actual_search_query.is_empty():
 			var filename := path.get_file()
-			if not _search_query.is_subsequence_ofn(filename):
-				should_add = false
+			if is_exact_search:
+				if filename.findn(actual_search_query) == -1:
+					should_add = false
+			else:
+				if not actual_search_query.is_subsequence_ofn(filename):
+					should_add = false
 
 		if should_add:
 			matching_paths.append(path)
 
-	if not _search_query.is_empty():
+	if not actual_search_query.is_empty():
 		matching_paths.sort_custom(func(a: String, b: String) -> bool:
 			var file_a := a.get_file()
 			var file_b := b.get_file()
-			var exact_a := file_a.findn(_search_query) != -1
-			var exact_b := file_b.findn(_search_query) != -1
+			var exact_a := file_a.findn(actual_search_query) != -1
+			var exact_b := file_b.findn(actual_search_query) != -1
 
 			if exact_a != exact_b:
 				return exact_a
