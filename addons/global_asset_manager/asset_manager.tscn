@@ -412,6 +412,7 @@ text = "Active Formats"
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 hide_root = true
+scroll_vertical_enabled = false
 
 [node name="HSeparator3" type="HSeparator" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=582192234]
 layout_mode = 2
