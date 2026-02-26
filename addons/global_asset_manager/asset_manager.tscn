@@ -137,6 +137,7 @@ stretch = true
 world_3d = SubResource("World3D_ul3vj")
 handle_input_locally = false
 size = Vector2i(446, 241)
+size_2d_override = Vector2i(223, 120)
 render_target_update_mode = 4
 
 [node name="Camera3D" type="Camera3D" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/PreviewContainer/SubViewportContainer/SubViewport" unique_id=1167006985]
@@ -190,9 +191,11 @@ size_flags_stretch_ratio = 0.6
 theme_override_constants/separation = 8
 
 [node name="FileNameLabel" type="Label" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=1945897261]
+custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "No asset selected"
 horizontal_alignment = 1
+autowrap_mode = 3
 
 [node name="ActionButtons" type="HBoxContainer" parent="MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel" unique_id=203888111]
 layout_mode = 2
@@ -301,13 +304,13 @@ value = 25.0
 
 [node name="WavLengthLabel" type="Label" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=1860502584]
 layout_mode = 2
-text = "WAV Preview Length: 6s"
+text = "WAV Preview Length: 20s"
 
 [node name="WavLengthSlider" type="HSlider" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=1204250806]
 layout_mode = 2
 min_value = 5.0
 max_value = 60.0
-value = 6.0
+value = 20.0
 
 [node name="WavDisclaimerLabel" type="Label" parent="SettingsDialog/ScrollContainer/VBoxContainer" unique_id=1950677763]
 layout_mode = 2

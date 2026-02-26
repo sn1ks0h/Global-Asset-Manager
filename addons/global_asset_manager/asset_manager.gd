@@ -42,6 +42,7 @@ var _selection_update_pending: bool = false
 var _tag_display_limit: int = 20
 var _tag_to_delete: String = ""
 var _thumbnail_cache: Dictionary = {}
+var _max_button_text_length: int = 30
 
 @onready var asset_grid: ItemList = $MarginContainer/MainSplit/ContentSplit/CenterPanel/AssetGrid
 @onready var audio_player: AudioStreamPlayer = $AudioStreamPlayer
@@ -1148,14 +1149,17 @@ func _update_tag_ui() -> void:
 
 	for tag in shared_tags:
 		var btn := Button.new()
-		btn.text = tag + " (x)"
+		if tag.length() > _max_button_text_length:
+			btn.text = tag.substr(0, _max_button_text_length) + "..." + " (x)"
+		else:
+			btn.text = tag + " (x)"
 		var captured_tag := tag
 		btn.pressed.connect(func() -> void: remove_tag_from_selected_assets(captured_tag))
 		btn.gui_input.connect(func(event: InputEvent) -> void:
 			if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
 				_filter_by_tag(captured_tag)
 		)
-		btn.tooltip_text = "Left-Click: Remove tag\nRight-Click: Filter by tag"
+		btn.tooltip_text = tag + "\nLeft-Click: Remove tag\nRight-Click: Filter by tag"
 		tag_flow_container.add_child(btn)
 
 	var search_text := tag_input_field.text.strip_edges().to_lower().replace(" ", "_")
@@ -1177,9 +1181,13 @@ func _update_tag_ui() -> void:
 
 	for tag in available_tags:
 		var btn := Button.new()
-		btn.text = tag + " (+)"
+		if tag.length() > _max_button_text_length:
+			btn.text = tag.substr(0, _max_button_text_length) + "..." + " (+)"
+		else:
+			btn.text = tag + " (+)"
 		var captured_tag := tag
 		btn.pressed.connect(func() -> void: add_tag_to_selected_assets(captured_tag))
+		btn.tooltip_text = tag
 		available_tags_flow_container.add_child(btn)
 
 func _update_tags_tree() -> void:
