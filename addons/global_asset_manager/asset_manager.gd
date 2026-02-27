@@ -356,7 +356,7 @@ func _deferred_selection_update() -> void:
 
 	var has_selection := selected.size() > 0
 	var is_single := selected.size() == 1
-	open_location_button.disabled = not has_selection
+	open_location_button.disabled = not is_single
 	send_to_project_button.disabled = not has_selection
 	open_external_button.disabled = not is_single
 
