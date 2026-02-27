@@ -436,6 +436,7 @@ func _display_preview() -> void:
 func _export_selected_to_project() -> void:
 	var selected_items := asset_grid.get_selected_items()
 	var export_count := 0
+	var tags_modified := false
 
 	for idx in selected_items:
 		var path: String = asset_grid.get_item_metadata(idx)
@@ -456,10 +457,22 @@ func _export_selected_to_project() -> void:
 			var err := DirAccess.copy_absolute(path, dest_path)
 			if err == OK:
 				export_count += 1
+
+				# Automatically apply the "imported" tag
+				var tags: Array = db["assets"][path].get("tags", [])
+				if not tags.has("imported"):
+					tags.append("imported")
+					db["assets"][path]["tags"] = tags
+					tags_modified = true
 			else:
 				push_error("Failed to copy file: ", path)
 
 	if export_count > 0:
+		if tags_modified:
+			_save_database()
+			call_deferred("_update_tags_tree")
+			_update_tag_ui()
+
 		if Engine.is_editor_hint():
 			EditorInterface.get_resource_filesystem().scan()
 		var original_text := send_to_project_button.text
