@@ -12,7 +12,7 @@ enum AssetType { MODEL_3D, IMAGE_2D, AUDIO, SHADER, UNKNOWN }
 const ALL_3D_FORMATS: PackedStringArray = ["glb", "gltf", "fbx"]
 const ALL_2D_FORMATS: PackedStringArray = ["png", "jpg", "jpeg", "webp"]
 const ALL_AUDIO_FORMATS: PackedStringArray = ["ogg", "mp3", "wav"]
-const DB_FILE_PATH: String = "user://asset_database.json"
+const DB_FILE_PATH: String = "user://asset_database.dat"
 
 var all_known_tags: Array[String] = []
 var current_selected_path: String = ""
@@ -43,6 +43,8 @@ var _tag_display_limit: int = 20
 var _tag_to_delete: String = ""
 var _thumbnail_cache: Dictionary = {}
 var _max_button_text_length: int = 30
+var _thumbnail_queue: Array[Dictionary] = []
+var _is_processing_thumbnails: bool = false
 
 @onready var asset_grid: ItemList = $MarginContainer/MainSplit/ContentSplit/CenterPanel/AssetGrid
 @onready var audio_player: AudioStreamPlayer = $AudioStreamPlayer
@@ -68,7 +70,7 @@ var _max_button_text_length: int = 30
 @onready var search_input: LineEdit = $MarginContainer/MainSplit/ContentSplit/CenterPanel/SearchHBox/SearchInput
 @onready var send_to_project_button: Button = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/ActionButtons/SendToProjectButton
 @onready var settings_button: Button = $MarginContainer/MainSplit/Sidebar/SettingsButton
-@onready var settings_dialog: SettingsManager = $SettingsDialog
+@onready var settings_dialog: AcceptDialog = $SettingsDialog
 @onready var tag_context_menu: PopupMenu = $TagContextMenu
 @onready var tag_flow_container: HFlowContainer = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/CurrentTagsScroll/TagFlowContainer
 @onready var tag_input_field: LineEdit = $MarginContainer/MainSplit/ContentSplit/PreviewPanel/DetailsPanel/TagInputField
@@ -536,11 +538,28 @@ func _get_shared_tags() -> Array[String]:
 	result.assign(shared_tags)
 	return result
 
-func _get_thumbnail(path: String, type: AssetType) -> Texture2D:
-	if _thumbnail_cache.has(path):
-		return _thumbnail_cache[path]
+func _queue_thumbnail(path: String, item_idx: int, version: int) -> void:
+	_thumbnail_queue.append({"path": path, "idx": item_idx, "version": version})
+	if not _is_processing_thumbnails:
+		_process_thumbnail_queue()
 
-	if type == AssetType.IMAGE_2D:
+func _process_thumbnail_queue() -> void:
+	_is_processing_thumbnails = true
+	while _thumbnail_queue.size() > 0:
+		var req: Dictionary = _thumbnail_queue.pop_front()
+
+		# Abort if the user typed a new search or changed folders while this was loading
+		if req["version"] != _grid_population_version:
+			continue
+
+		var path: String = req["path"]
+		var item_idx: int = req["idx"]
+
+		if _thumbnail_cache.has(path):
+			if item_idx < asset_grid.item_count and asset_grid.get_item_metadata(item_idx) == path:
+				asset_grid.set_item_icon(item_idx, _thumbnail_cache[path])
+			continue
+
 		var img := Image.load_from_file(path)
 		if img:
 			var size := img.get_size()
@@ -548,10 +567,16 @@ func _get_thumbnail(path: String, type: AssetType) -> Texture2D:
 			if max_dim > 64:
 				var scale := 64.0 / max_dim
 				img.resize(int(size.x * scale), int(size.y * scale), Image.INTERPOLATE_NEAREST)
+
 			var tex := ImageTexture.create_from_image(img)
 			_thumbnail_cache[path] = tex
-			return tex
-	return null
+
+			if req["version"] == _grid_population_version and item_idx < asset_grid.item_count and asset_grid.get_item_metadata(item_idx) == path:
+				asset_grid.set_item_icon(item_idx, tex)
+
+		await get_tree().process_frame
+
+	_is_processing_thumbnails = false
 
 func _get_type_tag(type: AssetType) -> String:
 	match type:
@@ -620,7 +645,22 @@ func _load_audio(path: String) -> void:
 
 func _load_database() -> void:
 	if FileAccess.file_exists(DB_FILE_PATH):
+		# Load the fast binary format
 		var file := FileAccess.open(DB_FILE_PATH, FileAccess.READ)
+		if file:
+			var data: Variant = file.get_var()
+			if data is Dictionary:
+				if data.has("assets"): db["assets"] = data["assets"]
+				if data.has("settings"): db["settings"] = data["settings"]
+				if data.has("folders"):
+					var parsed_folders: Variant = data["folders"]
+					if parsed_folders is Array:
+						db["folders"] = parsed_folders
+					elif parsed_folders is Dictionary:
+						db["folders"] = parsed_folders.keys()
+	elif FileAccess.file_exists("user://asset_database.json"):
+		# Legacy Migration: If the old JSON exists, load it and upgrade it to binary
+		var file := FileAccess.open("user://asset_database.json", FileAccess.READ)
 		var json_string := file.get_as_text()
 		var parsed: Variant = JSON.parse_string(json_string)
 		if parsed and parsed is Dictionary:
@@ -632,7 +672,9 @@ func _load_database() -> void:
 					db["folders"] = parsed_folders
 				elif parsed_folders is Dictionary:
 					db["folders"] = parsed_folders.keys()
+		_save_database() # Instantly saves the data into the new .dat format
 
+	# Default Settings Checks
 	if not db["settings"].has("grid_icon_size"):
 		db["settings"]["grid_icon_size"] = 40
 	if not db["settings"].has("wav_preview_length"):
@@ -993,6 +1035,7 @@ func _populate_asset_grid() -> void:
 	var end_idx: int = mini(start_idx + _items_per_page, matching_paths.size())
 
 	var items_added := 0
+
 	for i in range(start_idx, end_idx):
 		if current_version != _grid_population_version:
 			return
@@ -1000,17 +1043,14 @@ func _populate_asset_grid() -> void:
 		var path := matching_paths[i]
 		var filename := path.get_file()
 		var asset_type: int = db["assets"][path].get("type", AssetType.UNKNOWN)
-		var thumb := _get_thumbnail(path, asset_type)
 
-		var item_text := filename
-		var item_icon = thumb
-
-		if item_icon == null:
-			item_icon = _get_placeholder_icon(asset_type)
-
-		var idx := asset_grid.add_item(item_text, item_icon)
+		var item_icon := _get_placeholder_icon(asset_type)
+		var idx := asset_grid.add_item(filename, item_icon)
 		asset_grid.set_item_metadata(idx, path)
 		asset_grid.set_item_tooltip(idx, path)
+
+		if asset_type == AssetType.IMAGE_2D:
+			_queue_thumbnail(path, idx, current_version)
 
 		items_added += 1
 		if items_added % 200 == 0:
@@ -1118,7 +1158,8 @@ func _rescan_folder(folder_path: String) -> void:
 
 func _save_database() -> void:
 	var file := FileAccess.open(DB_FILE_PATH, FileAccess.WRITE)
-	file.store_string(JSON.stringify(db, "\t"))
+	if file:
+		file.store_var(db)
 
 func _select_folder_in_tree(folder_path: String) -> void:
 	var root := nav_tree.get_root()

@@ -16,10 +16,6 @@ config/tags=PackedStringArray("addon")
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="uid://v7toxwn166s3"
 
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/global_asset_manager/plugin.cfg")
-
 [physics]
 
 3d/physics_engine="Jolt Physics"

@@ -1,5 +1,4 @@
 @tool
-class_name SettingsManager
 extends AcceptDialog
 
 signal settings_changed
@@ -31,8 +30,9 @@ var _current_path_target: String = ""
 @onready var wav_length_slider: HSlider = $ScrollContainer/VBoxContainer/WavLengthSlider
 
 func save_database() -> void:
-	var file := FileAccess.open("user://asset_database.json", FileAccess.WRITE)
-	file.store_string(JSON.stringify(db, "\t"))
+	var file := FileAccess.open("user://asset_database.dat", FileAccess.WRITE)
+	if file:
+		file.store_var(db)
 
 func setup(database: Dictionary) -> void:
 	db = database
