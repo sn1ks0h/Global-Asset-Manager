@@ -435,6 +435,44 @@ func _display_preview() -> void:
 	elif _current_asset_type == AssetType.AUDIO:
 		_load_audio(current_selected_path)
 
+func _copy_gltf_dependencies(gltf_path: String, dest_dir: String) -> void:
+	var json_text := FileAccess.get_file_as_string(gltf_path)
+	var data: Variant = JSON.parse_string(json_text)
+	if not data is Dictionary:
+		push_warning("Could not parse glTF file for dependencies: ", gltf_path)
+		return
+
+	var src_dir := gltf_path.get_base_dir()
+	var uris: Array[String] = []
+	for key in ["buffers", "images"]:
+		for entry in data.get(key, []):
+			if entry is Dictionary and entry.has("uri"):
+				var uri: String = entry["uri"]
+				# Embedded data needs no copying
+				if uri.begins_with("data:"):
+					continue
+				uri = uri.uri_decode()
+				if not uris.has(uri):
+					uris.append(uri)
+
+	for uri in uris:
+		var rel_path := uri.simplify_path()
+		# Skip references outside the glTF's folder, since they can't be mirrored into dest_dir
+		if rel_path.is_absolute_path() or rel_path.begins_with(".."):
+			push_warning("Skipping glTF dependency outside its folder: ", uri)
+			continue
+
+		var src_file := src_dir.path_join(rel_path)
+		var dest_file := dest_dir.path_join(rel_path)
+		if not FileAccess.file_exists(src_file):
+			push_warning("Missing glTF dependency: ", src_file)
+			continue
+
+		if not DirAccess.dir_exists_absolute(dest_file.get_base_dir()):
+			DirAccess.make_dir_recursive_absolute(dest_file.get_base_dir())
+		if DirAccess.copy_absolute(src_file, dest_file) != OK:
+			push_error("Failed to copy glTF dependency: ", src_file)
+
 func _export_selected_to_project() -> void:
 	var selected_items := asset_grid.get_selected_items()
 	var export_count := 0
@@ -459,6 +497,10 @@ func _export_selected_to_project() -> void:
 			var err := DirAccess.copy_absolute(path, dest_path)
 			if err == OK:
 				export_count += 1
+
+				# .gltf files reference external buffers (.bin) and textures that must be copied too
+				if path.get_extension().to_lower() == "gltf":
+					_copy_gltf_dependencies(path, dest_dir)
 
 				# Automatically apply the "imported" tag
 				var tags: Array = db["assets"][path].get("tags", [])

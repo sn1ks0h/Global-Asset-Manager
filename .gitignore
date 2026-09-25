@@ -1,0 +1,20 @@
+# Godot 4+ specific ignores
+.godot/
+nomedia
+
+# Godot-specific ignores
+.import/
+export.cfg
+export_credentials.cfg
+*.tmp
+
+# Imported translations (automatically generated from CSV files)
+*.translation
+
+# Mono-specific ignores (if using C#)
+.mono/
+data_*/
+mono_crash.*.json
+
+# JetBrains Rider/IntelliJ IDE files (optional)
+.idea/   
