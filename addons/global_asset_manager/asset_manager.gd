@@ -13,6 +13,13 @@ const ALL_3D_FORMATS: PackedStringArray = ["glb", "gltf", "fbx"]
 const ALL_2D_FORMATS: PackedStringArray = ["png", "jpg", "jpeg", "webp"]
 const ALL_AUDIO_FORMATS: PackedStringArray = ["ogg", "mp3", "wav"]
 const DB_FILE_PATH: String = "user://asset_database.dat"
+# Image formats Godot can import, used to find textures a glTF references under a different extension
+const GLTF_TEXTURE_FORMATS: PackedStringArray = ["png", "jpg", "jpeg", "webp", "tga", "bmp", "exr", "hdr", "dds", "ktx", "svg"]
+# How far above a glTF's folder to look for dependencies that aren't where the file says they are
+const GLTF_SEARCH_PARENT_LEVELS: int = 2
+const GLTF_SEARCH_MAX_FILES: int = 5000
+# Folder (inside the model import folder) that holds dependencies shared between models
+const GLTF_SHARED_DIR_NAME: String = "_shared"
 
 var all_known_tags: Array[String] = []
 var current_selected_path: String = ""
@@ -443,35 +450,161 @@ func _copy_gltf_dependencies(gltf_path: String, dest_dir: String) -> void:
 		return
 
 	var src_dir := gltf_path.get_base_dir()
-	var uris: Array[String] = []
+	# Raw (still URI-encoded) uri strings, as written in the file
+	var raw_uris: Array[String] = []
+	var image_uris: Array[String] = []
 	for key in ["buffers", "images"]:
 		for entry in data.get(key, []):
 			if entry is Dictionary and entry.has("uri"):
-				var uri: String = entry["uri"]
+				var raw_uri: String = entry["uri"]
 				# Embedded data needs no copying
-				if uri.begins_with("data:"):
+				if raw_uri.begins_with("data:"):
 					continue
-				uri = uri.uri_decode()
-				if not uris.has(uri):
-					uris.append(uri)
+				if not raw_uris.has(raw_uri):
+					raw_uris.append(raw_uri)
+				if key == "images":
+					image_uris.append(raw_uri)
 
-	for uri in uris:
-		var rel_path := uri.simplify_path()
-		# Skip references outside the glTF's folder, since they can't be mirrored into dest_dir
-		if rel_path.is_absolute_path() or rel_path.begins_with(".."):
-			push_warning("Skipping glTF dependency outside its folder: ", uri)
-			continue
+	var uri_replacements := {}
+	var search_index := {}
 
-		var src_file := src_dir.path_join(rel_path)
-		var dest_file := dest_dir.path_join(rel_path)
+	for raw_uri in raw_uris:
+		var rel_path := raw_uri.uri_decode().simplify_path()
+		var src_file := rel_path if rel_path.is_absolute_path() else src_dir.path_join(rel_path).simplify_path()
+		var substituted := false
 		if not FileAccess.file_exists(src_file):
-			push_warning("Missing glTF dependency: ", src_file)
-			continue
+			# Exported asset packs often reference textures that live in another folder or use another format
+			var found_rel_path := _find_gltf_dependency(src_dir, rel_path.get_file(), image_uris.has(raw_uri), search_index)
+			if found_rel_path.is_empty():
+				push_warning("Missing glTF dependency: ", src_file)
+				continue
+			rel_path = found_rel_path
+			var found_file := src_dir.path_join(rel_path).simplify_path()
+			print("Global Asset Manager: ", gltf_path.get_file(), " references missing file ", src_file, ", using ", found_file, " instead.")
+			src_file = found_file
+			substituted = true
 
-		if not DirAccess.dir_exists_absolute(dest_file.get_base_dir()):
-			DirAccess.make_dir_recursive_absolute(dest_file.get_base_dir())
-		if DirAccess.copy_absolute(src_file, dest_file) != OK:
-			push_error("Failed to copy glTF dependency: ", src_file)
+		var is_external := rel_path.is_absolute_path() or rel_path.begins_with("..")
+
+		var dest_rel_path := rel_path
+		if is_external:
+			# Files outside the glTF's folder are usually shared by other models in the same pack
+			dest_rel_path = _get_shared_dependency_path(src_file, dest_dir)
+
+		var dest_file := dest_dir.path_join(dest_rel_path)
+		# An identical shared file was already imported with another model
+		var already_shared := is_external and FileAccess.file_exists(dest_file)
+		if not already_shared:
+			if not DirAccess.dir_exists_absolute(dest_file.get_base_dir()):
+				DirAccess.make_dir_recursive_absolute(dest_file.get_base_dir())
+			if DirAccess.copy_absolute(src_file, dest_file) != OK:
+				push_error("Failed to copy glTF dependency: ", src_file)
+				continue
+
+		if is_external or substituted:
+			var encoded_segments := PackedStringArray()
+			for segment in dest_rel_path.split("/"):
+				encoded_segments.append(segment.uri_encode())
+			uri_replacements[raw_uri] = "/".join(encoded_segments)
+
+	if uri_replacements.is_empty():
+		return
+
+	# Rewrite the uris in the copied .gltf so it points at the relocated files
+	var dest_gltf := dest_dir.path_join(gltf_path.get_file())
+	var dest_text := FileAccess.get_file_as_string(dest_gltf)
+	var unresolved: Array[String] = []
+	for raw_uri in uri_replacements:
+		var new_uri: String = uri_replacements[raw_uri]
+		var quoted := JSON.stringify(raw_uri)
+		# JSON writers may escape forward slashes
+		var quoted_escaped := quoted.replace("/", "\\/")
+		if dest_text.contains(quoted):
+			dest_text = dest_text.replace(quoted, JSON.stringify(new_uri))
+		elif dest_text.contains(quoted_escaped):
+			dest_text = dest_text.replace(quoted_escaped, JSON.stringify(new_uri))
+		else:
+			unresolved.append(raw_uri)
+
+	var file := FileAccess.open(dest_gltf, FileAccess.WRITE)
+	if file:
+		file.store_string(dest_text)
+		file.close()
+	else:
+		unresolved.assign(uri_replacements.keys())
+
+	var shared_path := dest_dir.path_join(GLTF_SHARED_DIR_NAME)
+	if unresolved.is_empty():
+		print("Global Asset Manager: files referenced outside the folder of ", gltf_path.get_file(), " are in ", shared_path, " and the glTF was updated to use them.")
+	else:
+		push_warning("Global Asset Manager: files referenced outside the folder of ", gltf_path.get_file(), " are in ", shared_path,
+			", but these references in the glTF could not be updated: ", ", ".join(unresolved),
+			". You may need to reconnect them manually in Godot.")
+
+# Returns where src_file belongs in the shared folder, relative to dest_dir.
+# Reuses an identical file already there; a different file with the same name gets a content-hash suffix.
+func _get_shared_dependency_path(src_file: String, dest_dir: String) -> String:
+	var file_name := src_file.get_file()
+	var shared_path := GLTF_SHARED_DIR_NAME.path_join(file_name)
+	var existing_file := dest_dir.path_join(shared_path)
+	if not FileAccess.file_exists(existing_file):
+		return shared_path
+
+	var src_md5 := FileAccess.get_md5(src_file)
+	if FileAccess.get_md5(existing_file) == src_md5:
+		return shared_path
+
+	var hashed_name := file_name.get_basename() + "_" + src_md5.left(8)
+	if not file_name.get_extension().is_empty():
+		hashed_name += "." + file_name.get_extension()
+	return GLTF_SHARED_DIR_NAME.path_join(hashed_name)
+
+# Returns the path of a file matching file_name, relative to src_dir, or "" if none is found.
+# Searches src_dir and then its parents; image references also match other image extensions.
+func _find_gltf_dependency(src_dir: String, file_name: String, is_image: bool, search_index: Dictionary) -> String:
+	var wanted_name := file_name.get_basename().to_lower()
+	var wanted_ext := file_name.get_extension().to_lower()
+	var root := src_dir
+
+	for level in GLTF_SEARCH_PARENT_LEVELS + 1:
+		if not search_index.has(level):
+			var files: Array[String] = []
+			_collect_files_recursive(root, "", files)
+			search_index[level] = files
+
+		var match_path := ""
+		for rel_file: String in search_index[level]:
+			if rel_file.get_file().get_basename().to_lower() != wanted_name:
+				continue
+			var ext := rel_file.get_extension().to_lower()
+			if ext == wanted_ext:
+				match_path = rel_file
+				break
+			if is_image and match_path.is_empty() and GLTF_TEXTURE_FORMATS.has(ext):
+				match_path = rel_file
+
+		if not match_path.is_empty():
+			return "../".repeat(level) + match_path
+
+		var parent := root.get_base_dir()
+		if parent == root:
+			break
+		root = parent
+
+	return ""
+
+func _collect_files_recursive(dir_path: String, rel_dir: String, result: Array[String]) -> void:
+	var dir := DirAccess.open(dir_path.path_join(rel_dir))
+	if not dir:
+		return
+	for file_name in dir.get_files():
+		if result.size() >= GLTF_SEARCH_MAX_FILES:
+			return
+		if file_name.get_extension() != "import":
+			result.append(rel_dir.path_join(file_name))
+	for sub_dir in dir.get_directories():
+		if not sub_dir.begins_with("."):
+			_collect_files_recursive(dir_path, rel_dir.path_join(sub_dir), result)
 
 func _export_selected_to_project() -> void:
 	var selected_items := asset_grid.get_selected_items()
