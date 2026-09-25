@@ -20,6 +20,8 @@ const GLTF_SEARCH_PARENT_LEVELS: int = 2
 const GLTF_SEARCH_MAX_FILES: int = 5000
 # Folder (inside the model import folder) that holds dependencies shared between models
 const GLTF_SHARED_DIR_NAME: String = "_shared"
+# How many frames to keep retrying the post-export filesystem scan while the editor is busy
+const SCAN_RETRY_MAX_FRAMES: int = 3600
 
 var all_known_tags: Array[String] = []
 var current_selected_path: String = ""
@@ -442,12 +444,16 @@ func _display_preview() -> void:
 	elif _current_asset_type == AssetType.AUDIO:
 		_load_audio(current_selected_path)
 
-func _copy_gltf_dependencies(gltf_path: String, dest_dir: String) -> void:
+# Copies a .gltf and the external buffers and textures it references into dest_dir.
+# Dependencies are written before the .gltf, and the .gltf is written once with its final uris,
+# so an editor scan that is already running never imports it while its textures are missing.
+func _export_gltf(gltf_path: String, dest_dir: String) -> Error:
+	var dest_gltf := dest_dir.path_join(gltf_path.get_file())
 	var json_text := FileAccess.get_file_as_string(gltf_path)
 	var data: Variant = JSON.parse_string(json_text)
 	if not data is Dictionary:
 		push_warning("Could not parse glTF file for dependencies: ", gltf_path)
-		return
+		return DirAccess.copy_absolute(gltf_path, dest_gltf)
 
 	var src_dir := gltf_path.get_base_dir()
 	# Raw (still URI-encoded) uri strings, as written in the file
@@ -508,11 +514,10 @@ func _copy_gltf_dependencies(gltf_path: String, dest_dir: String) -> void:
 			uri_replacements[raw_uri] = "/".join(encoded_segments)
 
 	if uri_replacements.is_empty():
-		return
+		return DirAccess.copy_absolute(gltf_path, dest_gltf)
 
-	# Rewrite the uris in the copied .gltf so it points at the relocated files
-	var dest_gltf := dest_dir.path_join(gltf_path.get_file())
-	var dest_text := FileAccess.get_file_as_string(dest_gltf)
+	# Rewrite the uris so the .gltf points at the relocated files
+	var dest_text := json_text
 	var unresolved: Array[String] = []
 	for raw_uri in uri_replacements:
 		var new_uri: String = uri_replacements[raw_uri]
@@ -527,11 +532,10 @@ func _copy_gltf_dependencies(gltf_path: String, dest_dir: String) -> void:
 			unresolved.append(raw_uri)
 
 	var file := FileAccess.open(dest_gltf, FileAccess.WRITE)
-	if file:
-		file.store_string(dest_text)
-		file.close()
-	else:
-		unresolved.assign(uri_replacements.keys())
+	if not file:
+		return FileAccess.get_open_error()
+	file.store_string(dest_text)
+	file.close()
 
 	var shared_path := dest_dir.path_join(GLTF_SHARED_DIR_NAME)
 	if unresolved.is_empty():
@@ -540,6 +544,7 @@ func _copy_gltf_dependencies(gltf_path: String, dest_dir: String) -> void:
 		push_warning("Global Asset Manager: files referenced outside the folder of ", gltf_path.get_file(), " are in ", shared_path,
 			", but these references in the glTF could not be updated: ", ", ".join(unresolved),
 			". You may need to reconnect them manually in Godot.")
+	return OK
 
 # Returns where src_file belongs in the shared folder, relative to dest_dir.
 # Reuses an identical file already there; a different file with the same name gets a content-hash suffix.
@@ -626,14 +631,14 @@ func _export_selected_to_project() -> void:
 			if not DirAccess.dir_exists_absolute(dest_dir):
 				DirAccess.make_dir_recursive_absolute(dest_dir)
 
-			var dest_path := dest_dir + "/" + path.get_file()
-			var err := DirAccess.copy_absolute(path, dest_path)
+			var err: Error
+			# .gltf files reference external buffers (.bin) and textures that must be copied too
+			if path.get_extension().to_lower() == "gltf":
+				err = _export_gltf(path, dest_dir)
+			else:
+				err = DirAccess.copy_absolute(path, dest_dir + "/" + path.get_file())
 			if err == OK:
 				export_count += 1
-
-				# .gltf files reference external buffers (.bin) and textures that must be copied too
-				if path.get_extension().to_lower() == "gltf":
-					_copy_gltf_dependencies(path, dest_dir)
 
 				# Automatically apply the "imported" tag
 				var tags: Array = db["assets"][path].get("tags", [])
@@ -651,10 +656,23 @@ func _export_selected_to_project() -> void:
 			_update_tag_ui()
 
 		if Engine.is_editor_hint():
-			EditorInterface.get_resource_filesystem().scan()
+			_scan_when_idle()
 		var original_text := send_to_project_button.text
 		send_to_project_button.text = "Exported " + str(export_count) + " file(s)!"
 		get_tree().create_timer(2.0).timeout.connect(func() -> void: send_to_project_button.text = original_text)
+
+# scan() is silently ignored while the editor is already scanning (including the frames after a
+# scan's thread ends but before its results are applied), and that scan may have started before the
+# exported files were written. Retry until a scan of our own actually starts.
+func _scan_when_idle() -> void:
+	var fs := EditorInterface.get_resource_filesystem()
+	for attempt in SCAN_RETRY_MAX_FRAMES:
+		if not fs.is_scanning() and not fs.is_importing():
+			fs.scan()
+			if fs.is_scanning():
+				return
+		await get_tree().process_frame
+	push_warning("Global Asset Manager: the editor stayed busy, so exported files will be imported on its next filesystem scan.")
 
 func _filter_by_tag(tag_text: String) -> void:
 	if not _active_filter_tags.has(tag_text):
@@ -770,6 +788,9 @@ func _handle_selection_change() -> void:
 func _load_3d_model(path: String) -> void:
 	var ext := path.get_extension().to_lower()
 	var state := GLTFState.new()
+	# The editor default extracts embedded textures next to the source file and imports them,
+	# which writes into the asset library; keep them in memory for the preview instead
+	state.handle_binary_image = GLTFState.HANDLE_BINARY_EMBED_AS_UNCOMPRESSED
 	var err: int = FAILED
 
 	if ext == "fbx":
